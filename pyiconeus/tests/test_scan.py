@@ -1,13 +1,11 @@
+from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC, read_scan
+from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType
 from tests.test_open import testDataPath
-from src.io.base import read_scan
-from src.models.Scan import Scan
-from src.io.base import check_fourCC
-from src.models.Scan import AcquisitionMode, WeightUnitType
 
 
 def test_check_fourCC():
     assert check_fourCC(
-        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"
+        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", SCAN_4CC_STR
     )
 
 

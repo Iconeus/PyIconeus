@@ -1,6 +1,4 @@
-from src.io.base import read_scan
-from src.models.Scan import Scan
-from src.io.base import open_path
+from pyiconeus.io.base import open_path
 
 testDataPath = "./tests/data"
 

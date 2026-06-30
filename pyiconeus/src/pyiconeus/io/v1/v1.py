@@ -1,7 +1,7 @@
 from pathlib import Path
-from src.models.Scan import Scan
-from src.models.Scan import VoxDim
-from src.models.Scan import AcquisitionMode
+from ...models.Scan import Scan
+from ...models.Scan import VoxDim
+from ...models.Scan import AcquisitionMode
 from pyfus.io.files import _hdf52scan
 from pyfus.scan.consolidation import consolidate_scan, _deconvolve_probe_path
 

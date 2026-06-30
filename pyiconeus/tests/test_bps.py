@@ -1,7 +1,7 @@
-from src.io.base import open_path
 from tests.test_open import testDataPath
-from src.models.Bps import Bps
-from src.models.Scan import Scan
+from pyiconeus.models.Scan import Scan
+from pyiconeus.models.Bps import Bps
+from pyiconeus.io.base import open_path
 
 
 def test_bps_load():
@@ -23,3 +23,6 @@ def test_assign_bps():
     bps: Bps = open_path(testDataPath + "/Mouse.bps")  # ty:ignore[invalid-assignment]
     scan.bps = bps
     assert scan.bps is not None
+
+if __name__ == '__main__':
+    test_assign_bps()

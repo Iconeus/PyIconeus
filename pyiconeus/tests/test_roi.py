@@ -1,7 +1,7 @@
-from src.models.Roi import Roi
-from src.io.roi.bri_reader import bri_reader_hdf5, bri_reader_binary
-from src.io.base import read_bri
+from pyiconeus.io.base import read_bri
 from tests.test_open import testDataPath
+from pyiconeus.models.Roi import Roi
+from pyiconeus.io.roi.bri_reader import bri_reader_binary, bri_reader_hdf5
 
 def test_load_hdf5():
     roi_test: Roi = bri_reader_hdf5(testDataPath + "/roi_for_4DStacked.bri")

@@ -1,9 +1,9 @@
-import ctypes
+# import ctypes
 from enum import IntEnum
 import datetime
 import numpy as np
 
-from src.models.Bps import Bps
+from ..models.Bps import Bps
 
 class Scan:
     def __init__(self) -> None:

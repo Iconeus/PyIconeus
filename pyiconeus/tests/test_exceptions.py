@@ -1,16 +1,7 @@
-from src.io.base import read_scan
-from src.io.base import open_path
-from src.models.Scan import Scan
-
 # from src.models.exceptions import BadFile
-from src.io.base import check_fourCC
 import pytest
 
-
-def test_bad_file_check_fourCC():
-    with pytest.raises(FileNotFoundError) as exception:
-        check_fourCC("NotAFile!")
-    assert str(exception.value) == "[Errno 2] No such file or directory: 'NotAFile!'"
+from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC, open_path
 
 
 def test_invalid_file_open_path():

@@ -1,4 +1,4 @@
-from src.models.Bps import Bps
+from ...models.Bps import Bps
 import numpy as np
 import h5py
 

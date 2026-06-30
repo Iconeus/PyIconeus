@@ -1,10 +1,10 @@
 import struct
 import h5py
 import numpy as np
-from src.models.Roi import Roi
-from src.models.Roi import RoiColor
-from src.utils.utils import hdf5_string_reader, read_string_binary
-from src.models.Roi import RoiElements
+from ...models.Roi import Roi
+from ...models.Roi import RoiColor
+from ...utils.utils import hdf5_string_reader, read_string_binary
+from ...models.Roi import RoiElements
 
 
 def bri_reader_hdf5(filepath) -> Roi:

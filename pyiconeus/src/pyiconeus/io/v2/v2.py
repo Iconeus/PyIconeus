@@ -2,8 +2,8 @@ import sys
 import ctypes
 import struct
 import numpy as np
-from src.models.Scan import Scan, Dim6, VoxDim, Probe, ProbeToLabElements, AcquisitionMode, Depth, GenderType, IcoScanVersion, WeightUnitType, ScanType
-from src.utils.utils import read_string_binary
+from ...models.Scan import Scan, Dim6, VoxDim, Probe, ProbeToLabElements, AcquisitionMode, Depth, GenderType, IcoScanVersion, WeightUnitType, ScanType
+from ...utils.utils import read_string_binary
 import datetime
 import pytz
 
@@ -84,7 +84,7 @@ def read_binary(filepath) -> Scan:
     scan: Scan = Scan()
     with open(filepath, 'rb') as f:
         f.seek(32)
-        dO: ctypes.c_ulonglong = struct.unpack('@Q', f.read(8))[0]
+        dO: int = struct.unpack('@Q', f.read(8))[0]
         f.seek(92)
         scan.sizeX = struct.unpack('@Q', f.read(8))[0]
         scan.sizeY = struct.unpack('@Q', f.read(8))[0]
