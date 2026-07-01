@@ -32,3 +32,16 @@ def read_string_binary(f, format, bytes_size) -> str:
     for _ in range(stringSize):
         rep += str(struct.unpack('@s', f.read(1))[0], encoding)
     return rep
+
+def translationMatrix(dx, dy, dz):
+    return np.array([[1, 0, 0, dx],
+                        [0, 1, 0, dy],
+                        [0, 0, 1, dz],
+                        [0, 0, 0, 1]])
+
+
+def scaleMatrix(sx, sy, sz):
+    return np.array([[sx, 0, 0, 0],
+                            [0, sy, 0, 0],
+                            [0, 0, sz, 0],
+                            [0, 0, 0, 1]])

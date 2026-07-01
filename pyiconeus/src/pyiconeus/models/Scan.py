@@ -1,5 +1,7 @@
 # import ctypes
+from PIL.ImageOps import scale
 from enum import IntEnum
+from ..utils.utils import translationMatrix, scaleMatrix
 import datetime
 import numpy as np
 
@@ -54,6 +56,13 @@ class Scan:
         self.voxels: np.ndarray
         self.bps: Bps
 
+    def get_VoxelToProb(self):
+        shift_voxel = translationMatrix(-1, -1, -1)
+        center_probe = translationMatrix((float)(-((self.sizeX - 1) / 2)), (float)(-((self.sizeY - 1) / 2)), 0)
+        scale_to_metric = scaleMatrix(self.voxDim.dx, self.voxDim.dy, -self.voxDim.dz)
+        move_probe_up = translationMatrix(0,0, -self.depth.depthNear * 0.001)
+        return move_probe_up @ scale_to_metric @ center_probe @ shift_voxel
+    
     def __repr__(self):
         ...
     def __str__(self) -> str:
@@ -88,7 +97,6 @@ class VoxDim:
         ...
     def __str__(self) -> str:
         return f"\n\tdx: {self.dx}\n\tdy: {self.dy}\n\tdz: {self.dz}\n\tdt: {self.dt}\n\tdr: {self.dr}\n\tdtheta: {self.dtheta}\n"
-
 
 class IcoScanVersion:
     def __init__(self, major, minor, patch) -> None:

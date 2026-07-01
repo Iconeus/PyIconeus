@@ -1,3 +1,4 @@
+from cgi import test
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC, read_scan
 from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType
 from tests.test_open import testDataPath
@@ -45,3 +46,12 @@ def test_scan_values_ULM_2D():
     assert scan.weight == 0.0
     assert scan.weightUnit == WeightUnitType.mg
     assert scan.type.name == "Source"
+
+def test_voxel_to_prob():
+    scan: Scan = read_scan(testDataPath + "/TestULM2D_v2.source.scan")  # ty:ignore[invalid-assignment]
+    vTp = scan.get_VoxelToProb()
+    print(vTp)
+    assert vTp is not None
+
+if __name__ == '__main__':
+    test_voxel_to_prob()
