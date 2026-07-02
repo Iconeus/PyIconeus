@@ -24,7 +24,7 @@ def read_hdf5(filepath):
             out_scan.acquisitionMode = AcquisitionMode(1)
         case "3D+t":
             out_scan.acquisitionMode = AcquisitionMode(2)
-    out_scan.voxDim = VoxDim(scan.voxdim[0], scan.voxdim[1], scan.voxdim[2], scan.dt, 0.0, 0.0)
+    out_scan.voxDim = VoxDim(scan.voxdim[0], scan.voxdim[1], scan.voxdim[2], scan.dt, 0, 0)
     out_scan.integrationWindowDuration = scan.dt
     translations, rotations, _ = _deconvolve_probe_path(scan.get_qform())
     out_scan.probeToLabsTranslations = translations

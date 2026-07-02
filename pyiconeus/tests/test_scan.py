@@ -1,4 +1,3 @@
-from cgi import test
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC, read_scan
 from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType
 from tests.test_open import testDataPath

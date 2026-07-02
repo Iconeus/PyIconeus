@@ -20,7 +20,6 @@ def check_fourCC(filepath, str_check) -> bool | FileNotFoundError:
             fourCC = ""
             for _ in range(4):
                 fourCC += str(struct.unpack('@s', f.read(1))[0], encoding='utf-8')
-                print(fourCC)
         return fourCC == str_check
     except:
         return False

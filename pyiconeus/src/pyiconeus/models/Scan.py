@@ -1,5 +1,4 @@
 # import ctypes
-from PIL.ImageOps import scale
 from enum import IntEnum
 from ..utils.utils import translationMatrix, scaleMatrix
 import datetime
