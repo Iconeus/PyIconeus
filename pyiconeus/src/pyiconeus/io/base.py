@@ -1,6 +1,6 @@
 from typing import Union
 from .v2.v2 import read_binary
-from ..io.bps.bps_reader import read_h5_bps
+from ..io.bps.bps_reader import read_h5_bps, read_binary_bps
 from ..models.Scan import Scan
 from ..models.Bps import Bps
 from ..models.Roi import Roi
@@ -10,8 +10,10 @@ import os
 
 global SCAN_4CC_STR
 global ROI_4CC_STR
+global BPS_4CC_STR
 SCAN_4CC_STR = 'scan'
 ROI_4CC_STR = 'bri_'
+BPS_4CC_STR = 'bps_'
 
 
 def check_fourCC(filepath, str_check) -> bool | FileNotFoundError:
@@ -45,7 +47,10 @@ def read_bri(filepath) -> Roi:
     return roi
 
 def read_bps(filepath: str) -> Bps | None:
-    return read_h5_bps(filepath)
+    if (check_fourCC(filepath, BPS_4CC_STR)):
+        return read_binary_bps(filepath)
+    else:
+        return read_h5_bps(filepath)
 
 
 def dispatch_extension(filepath) -> Scan | Bps | Roi | None:
