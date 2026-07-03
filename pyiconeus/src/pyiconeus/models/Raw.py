@@ -16,3 +16,7 @@ class Raw:
             self.compound: bool
             self.numberOfBlock: int
             self.acquisitionMode: str
+
+    def __init__(self):
+        self.data: np.ndarray
+        self.metadata: Raw.MetaData

@@ -14,5 +14,9 @@ def test_load_binary():
 def test_roi_dispatch_version():
     roi_test_hdf5: Roi = read_bri(testDataPath + "/roi_for_4DStacked.bri")
     roi_test_binary: Roi = read_bri(testDataPath + "/roiread_binary.bri")
+    print("\nRoi Hdf5")
+    print(roi_test_hdf5)
+    print("\nRoi binary")
+    print(roi_test_binary)
     assert roi_test_hdf5 is not None
     assert roi_test_binary is not None
