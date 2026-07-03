@@ -84,7 +84,7 @@ class Scan:
         return rep
 
 class VoxDim:
-    def __init__(self, dx, dy, dz, dt, dr, dtheta) -> None:
+    def __init__(self, dx, dy, dz, dt=None, dr=None, dtheta=None) -> None:
         self.dx = dx
         self.dy = dy
         self.dz = dz
