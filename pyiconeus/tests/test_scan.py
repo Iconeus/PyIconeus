@@ -49,7 +49,7 @@ def test_scan_values_ULM_2D():
 
 def test_voxel_to_prob():
     scan: Scan = read_scan(testDataPath + "/TestULM2D_v2.source.scan")  # ty:ignore[invalid-assignment]
-    vTp = scan.get_VoxelToProb()
+    vTp = scan.get_VoxelToProbe()
     print("VoxelToProbeCreation")
     print(vTp)
     assert vTp is not None

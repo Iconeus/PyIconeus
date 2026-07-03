@@ -55,7 +55,7 @@ class Scan:
         self.voxels: np.ndarray
         self.bps: Bps
 
-    def get_VoxelToProb(self):
+    def get_VoxelToProbe(self):
         shift_voxel = translationMatrix(-1, -1, -1)
         center_probe = translationMatrix((float)(-((self.sizeX - 1) / 2)), (float)(-((self.sizeY - 1) / 2)), 0)
         scale_to_metric = scaleMatrix(self.voxDim.dx, self.voxDim.dy, -self.voxDim.dz)
