@@ -4,17 +4,6 @@ import numpy as np
 import h5py
 
 
-def decryptData(value, n: int):
-    if value.shape[0] == 1:
-        nbrc = np.asarray(value, dtype=float)[0]
-    else:
-        nbrc = np.asarray(value, dtype=float)
-    nbr = nbrc.copy()
-    if nbrc.ndim < 3:
-        nbr = (nbrc - 72) / (1005 * n)
-    return nbr
-
-
 def read_hraw_binary(fileheader):
     return
 

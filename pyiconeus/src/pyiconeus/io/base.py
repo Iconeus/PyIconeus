@@ -4,7 +4,6 @@ from ..models.Scan import Scan
 from ..models.Bps import Bps
 from ..models.Roi import Roi
 from ..models.Raw import Raw
-from ..io.raw.raw_reader import raw_reader_binary, raw_reader_hdf5
 import struct
 import os
 
@@ -48,14 +47,10 @@ def read_bps(filepath: str) -> Bps | None:
     return Bps(filepath, check_fourCC(filepath, BPS_4CC_STR))
 
 
-def read_raw(filepath, fileheader):
-    if check_fourCC(filepath, RAW_4CC_STR):
-        return raw_reader_binary(filepath, fileheader)
-    else:
-        return raw_reader_hdf5(filepath, fileheader)
+def read_raw(filepath, fileheader, blockStart:int =1, blockEnd:int =1):
+    return Raw(filepath, fileheader, blockStart, blockEnd)
 
-
-def dispatch_extension(filepath, fileheader) -> Scan | Bps | Roi | None:
+def dispatch_extension(filepath, fileheader, blockStart:int = 1, blockEnd: int = 1) -> Scan | Bps | Roi | None:
     if filepath.endswith(".scan"):
         return read_scan(filepath)
     elif filepath.endswith(".bps"):
@@ -63,12 +58,12 @@ def dispatch_extension(filepath, fileheader) -> Scan | Bps | Roi | None:
     elif filepath.endswith(".bri"):
         return read_bri(filepath)
     elif fileheader and filepath.endswith(".raw") and fileheader.endswith(".hraw"):
-        return read_raw(filepath, fileheader)
+        return read_raw(filepath, fileheader, blockStart, blockEnd)
     else:
         return None
 
 
-def open_path(path: str, path2=None) -> Union[Scan, Bps, None, FileNotFoundError]:
+def open_path(path: str, path2:str | None = None, blockStart:int = 1, blockEnd: int = 1) -> Union[Scan, Bps, None, FileNotFoundError]:
     try:
         if not os.path.isfile(path):
             raise FileNotFoundError
@@ -77,4 +72,4 @@ def open_path(path: str, path2=None) -> Union[Scan, Bps, None, FileNotFoundError
         e.filename = path
         e.strerror = "The following file does not exist"
         raise e
-    return dispatch_extension(path, path2)  # ty:ignore[invalid-return-type]
+    return dispatch_extension(path, path2, blockStart, blockEnd)  # ty:ignore[invalid-return-type]

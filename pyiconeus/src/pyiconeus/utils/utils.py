@@ -41,3 +41,13 @@ def translationMatrix(dx, dy, dz):
 
 def scaleMatrix(sx, sy, sz):
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
+
+def decryptData(value, n: int):
+    if value.shape[0] == 1:
+        nbrc = np.asarray(value, dtype=float)[0]
+    else:
+        nbrc = np.asarray(value, dtype=float)
+    nbr = nbrc.copy()
+    if nbrc.ndim < 3:
+        nbr = (nbrc - 72) / (1005 * n)
+    return nbr
