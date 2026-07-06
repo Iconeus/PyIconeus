@@ -1,4 +1,7 @@
+import h5py
 import numpy as np
+from ..utils.utils import read_string_binary, hdf5_string_reader
+from struct import unpack
 
 
 # ROI
@@ -12,8 +15,48 @@ import numpy as np
 # Vertices: Array of 3-Dimensional vertices
 # Faces: Array of vertex indices composing the volume triangles (name: triangles in binary version)
 class Roi:
-    def __init__(self):
+    def __init__(self, filepath, is_binary: bool):
         self.list: list[RoiElements] = []
+        if is_binary:
+            with open(filepath, "rb") as f:
+                f.seek(12)
+                roi_count = unpack("@L", f.read(4))[0]
+                for _ in range(roi_count):
+                    # Vertices
+                    vertices_count: int = unpack("@L", f.read(4))[0]
+                    vertices: np.ndarray = np.ndarray(shape=(vertices_count, 3))
+                    for i in range(vertices_count):
+                        vertices[i][0] = unpack("@d", f.read(8))[0]
+                        vertices[i][1] = unpack("@d", f.read(8))[0]
+                        vertices[i][2] = unpack("@d", f.read(8))[0]
+
+                    # Triangles
+                    indices_count: int = unpack("@L", f.read(4))[0]
+                    triangles: np.ndarray = np.ndarray(shape=(indices_count, 3))
+                    for i in range(indices_count):
+                        triangles[i][0] = int(unpack("@L", f.read(4))[0])
+                        triangles[i][1] = int(unpack("@L", f.read(4))[0])
+                        triangles[i][2] = int(unpack("@L", f.read(4))[0])
+                    color = RoiColor(
+                        unpack("@f", f.read(4))[0],
+                        unpack("@f", f.read(4))[0],
+                        unpack("@f", f.read(4))[0],
+                    )
+                    label: str = read_string_binary(f, '@L', 4)
+                    self.list.append(RoiElements(color, vertices, triangles, label))
+        else:
+            with h5py.File(filepath, "r") as f:
+                for roiElementName in f["ROI"]:
+                    roiElement: h5py.Dataset = f["ROI"][roiElementName]
+                    name: str = hdf5_string_reader(roiElement["label"])
+                    color: RoiColor = RoiColor(
+                        roiElement["color"][0][0] / 256,
+                        roiElement["color"][0][1] / 256,
+                        roiElement["color"][0][2] / 256
+                    )
+                    faces: np.ndarray = roiElement["faces"][:]
+                    vertices: np.ndarray = roiElement["vertices"][:]
+                    self.list.append(RoiElements(color, vertices, faces, name))
 
     def __repr__(self): ...
     def __str__(self):

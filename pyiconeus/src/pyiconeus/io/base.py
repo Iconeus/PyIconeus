@@ -4,7 +4,6 @@ from ..models.Scan import Scan
 from ..models.Bps import Bps
 from ..models.Roi import Roi
 from ..models.Raw import Raw
-from ..io.roi.bri_reader import bri_reader_binary, bri_reader_hdf5
 from ..io.raw.raw_reader import raw_reader_binary, raw_reader_hdf5
 import struct
 import os
@@ -42,12 +41,7 @@ def read_scan(filepath) -> Scan | None:
 
 def read_bri(filepath) -> Roi:
     # check v1 or v2
-    if check_fourCC(filepath, ROI_4CC_STR):  # v2
-        print(filepath)
-        roi: Roi = bri_reader_binary(filepath)
-    else:  # v1
-        roi: Roi = bri_reader_hdf5(filepath)
-    return roi
+    return Roi(filepath, check_fourCC(filepath, ROI_4CC_STR))  # v2
 
 
 def read_bps(filepath: str) -> Bps | None:
