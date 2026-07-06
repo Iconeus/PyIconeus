@@ -28,24 +28,15 @@ def check_fourCC(filepath, str_check) -> bool:
         return False
 
 
-def read_scan(filepath) -> Scan | None:
-    # check v1 or v2
-    if check_fourCC(filepath, SCAN_4CC_STR):  # v2
-        scan: Scan = read_binary(filepath)
-    else:  # v1
-        # TODO
-        return None
-    return scan
-
+def read_scan(filepath) -> Scan:
+    return Scan(filepath, check_fourCC(filepath, SCAN_4CC_STR))
 
 def read_bri(filepath) -> Roi:
     # check v1 or v2
     return Roi(filepath, check_fourCC(filepath, ROI_4CC_STR))  # v2
 
-
-def read_bps(filepath: str) -> Bps | None:
+def read_bps(filepath: str) -> Bps:
     return Bps(filepath, check_fourCC(filepath, BPS_4CC_STR))
-
 
 def read_raw(filepath, fileheader, blockStart:int =1, blockEnd:int =1):
     return Raw(filepath, fileheader, blockStart, blockEnd)

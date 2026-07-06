@@ -1,13 +1,14 @@
-# import ctypes
+from struct import unpack
 from enum import IntEnum
-from ..utils.utils import translationMatrix, scaleMatrix
+from ..utils.utils import translationMatrix, scaleMatrix, read_string_binary
 import datetime
+import pytz
 import numpy as np
 
 from ..models.Bps import Bps
 
 class Scan:
-    def __init__(self) -> None:
+    def __init__(self, filepath: str, is_binary: bool) -> None:
         self.sizeX: int
         self.sizeY: int
         self.sizeZ: int
@@ -15,8 +16,8 @@ class Scan:
         self.nPose: int
         self.measuredTimes: list[float] = []
         self.theoricalTimeIndices: list[int] = []
-        self.probeToLabsTranslations: np.ndarray
-        self.probeToLabsRotations: np.ndarray
+        self.probeToLabsTranslations: ProbeToLabElements
+        self.probeToLabsRotations: ProbeToLabElements
         self.dim6: Dim6
         self.voxDim: VoxDim
         self.acquisitionMode: AcquisitionMode
@@ -54,6 +55,93 @@ class Scan:
         self.icoScanVersion: IcoScanVersion
         self.voxels: np.ndarray
         self.bps: Bps
+        if is_binary:
+            self.load_scan_binary(filepath)
+
+
+    def load_scan_binary(self, filepath):
+        with open(filepath, 'rb') as f:
+            f.seek(32)
+            dO: int = unpack('@Q', f.read(8))[0]
+            f.seek(92)
+            self.sizeX = unpack('@Q', f.read(8))[0]
+            self.sizeY = unpack('@Q', f.read(8))[0]
+            self.sizeZ = unpack('@Q', f.read(8))[0]
+            self.nTime = unpack('@Q', f.read(8))[0]
+            self.nPose = unpack('@Q', f.read(8))[0]
+            self.dim6 = Dim6()
+            self.dim6.load_binary(f)
+            self.voxDim = VoxDim()
+            self.voxDim.load_binary(f)
+            timeArraySize: int = self.sizeY * self.nTime * self.nPose
+            for _ in range(timeArraySize):
+                self.measuredTimes.append(unpack('@d', f.read(8))[0])
+            for _ in range(timeArraySize):
+                self.theoricalTimeIndices.append(unpack('@L', f.read(4))[0])
+            self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
+            self.probeToLabsTranslations.load_binary(f)
+            self.probeToLabsRotations = ProbeToLabElements(self.nPose)
+            self.probeToLabsRotations.load_binary(f)
+            f.seek(4, 1)
+            self.acquisitionMode = AcquisitionMode(unpack('@L', f.read(4))[0])
+            f.seek(4, 1)
+            self.probe = Probe()
+            self.probe.load_binary(f)
+            depthNear = unpack('@d', f.read(8))[0]
+            depthFar = unpack('@d', f.read(8))[0]
+            self.depth = Depth(depthNear, depthFar)
+            self.ultrafastTransmitFrequency = unpack('@d', f.read(8))[0]
+            self.pulseRepetitionFrequency = unpack('@d', f.read(8))[0]
+            self.ultrafastSamplingFrequency = unpack('@d', f.read(8))[0]
+            f.seek(8, 1)
+            nPlaneWavesAngles = unpack('@L', f.read(4))[0]
+            for _ in range(nPlaneWavesAngles):
+                self.planeWaveAngles.append(unpack('@d', f.read(8))[0])
+            tempVal = unpack('@L', f.read(4))
+            f.seek(tempVal[0] * 24 + 8, 1)
+            self.transmitVoltage = unpack('@d', f.read(8))[0]
+            f.seek(4, 1)
+            self.delayAfterTrigger = unpack('@d', f.read(8))[0]
+            tempVal = unpack('@L', f.read(4))
+            f.seek(tempVal[0] * 8, 1)
+            self.isMultiplane = unpack('@?', f.read(1))[0]
+            f.seek(1, 1)
+            self.integrationWindowDuration = unpack('@d', f.read(8))[0]
+            self.sequenceName = read_string_binary(f, '@L', 4)
+            self.projectTag = read_string_binary(f, '@L', 4)
+            self.projectDescription = read_string_binary(f, '@L', 4)
+            self.subjectTag = read_string_binary(f, '@L', 4)
+            self.sessionTag = read_string_binary(f, '@L', 4)
+            self.species = read_string_binary(f, '@L', 4)
+            self.gender = GenderType(unpack('@L', f.read(4))[0])
+            self.transferDate = datetime.datetime.fromtimestamp(unpack('@q', f.read(8))[0], pytz.utc)
+            self.ageAtTransfer = unpack('@Q', f.read(8))[0]
+            self.subjectDescription = read_string_binary(f, '@L', 4)
+            self.weightUnit = WeightUnitType(unpack('@L', f.read(4))[0])
+            self.weight = unpack('@f', f.read(4))[0]
+            self.treatment = read_string_binary(f, '@L', 4)
+            self.scanTag= read_string_binary(f, '@L', 4)
+            self.studyType = read_string_binary(f, '@L', 4)
+            self.taskName = read_string_binary(f, '@L', 4)
+            self.taskDescription = read_string_binary(f, '@L', 4)
+            self.username = read_string_binary(f, '@L', 4)
+            for _ in range(2):
+                tempVal = unpack('@L', f.read(4))[0]
+                f.seek(tempVal, 1)
+            self.acquisitionDate = datetime.datetime.fromtimestamp(unpack('@q', f.read(8))[0], pytz.utc)
+            self.type = ScanType(unpack('@L', f.read(4))[0])
+            toggleTimes: int = unpack('@L', f.read(4))[0]
+            for _ in range(toggleTimes):
+                self.stimulationToggleTimes.append(unpack('@f', f.read(4))[0])
+            icoScanMajor= unpack('@L', f.read(4))[0]
+            icoScanMinor= unpack('@L', f.read(4))[0]
+            icoScanPatch= unpack('@L', f.read(4))[0]
+            self.icoScanVersion = IcoScanVersion(icoScanMajor, icoScanMinor, icoScanPatch)
+            f.seek(dO)
+            dataSize = self.sizeX * self.sizeY * self.sizeZ * self.nTime * self.nPose * self.dim6.dim6
+            self.voxels = np.fromfile(f, dtype='d', count=dataSize)
+            self.voxels = self.voxels.reshape((self.dim6.dim6, self.nTime, self.sizeZ, self.sizeY, self.sizeX), order='C')
+
 
     def get_VoxelToProbe(self):
         shift_voxel = translationMatrix(-1, -1, -1)
@@ -84,14 +172,22 @@ class Scan:
         return rep
 
 class VoxDim:
-    def __init__(self, dx, dy, dz, dt=None, dr=None, dtheta=None) -> None:
-        self.dx = dx
-        self.dy = dy
-        self.dz = dz
-        self.dt = dt
-        self.dr = dr
-        self.dtheta = dtheta
-    
+    def __init__(self, dx = 0, dy = 0, dz = 0, dt = 0, dr = 0, dtheta = 0) -> None:
+        self.dx: float = dx
+        self.dy: float = dy
+        self.dz: float = dz
+        self.dt: float = dt
+        self.dr: float = dr
+        self.dtheta: float = dtheta
+
+    def load_binary(self, f):
+        self.dx = unpack('@d', f.read(8))[0]
+        self.dy = unpack('@d', f.read(8))[0]
+        self.dz = unpack('@d', f.read(8))[0]
+        self.dt = unpack('@d', f.read(8))[0]
+        self.dr = unpack('@d', f.read(8))[0]
+        self.dtheta = unpack('@d', f.read(8))[0]
+
     def __repr__(self):
         ...
     def __str__(self) -> str:
@@ -124,12 +220,21 @@ class Dim6:
             DynamicSVD = 1,
             Butterworth = 2
 
-        def __init__(self, clutterFilter, clutterFilterWindowDuration,
-                        clutterFilterCutoffLow, clutterFilterCutoffHigh) -> None:
-            self.clutterFilter = self.clutterFilterType(clutterFilter)
-            self.clutterFilterWindowDuration = clutterFilterWindowDuration
-            self.clutterFilterCutoffLow = clutterFilterCutoffLow
-            self.clutterFilterCutoffHigh = clutterFilterCutoffHigh
+        def __init__(self) -> None:
+            self.clutterFilter: self.clutterFilterType
+            self.clutterFilterWindowDuration: float
+            self.clutterFilterCutoffLow: float
+            self.clutterFilterCutoffHigh: float
+
+        def load_binary(self, f):
+            self.clutterFilter = self.clutterFilterType(unpack('@L', f.read(4))[0])
+            self.clutterFilterWindowDuration = unpack('@d', f.read(8))[0]
+            if self.clutterFilter == self.clutterFilterType.StaticSVD or self.clutterFilter == self.clutterFilterType.DynamicSVD:
+                self.clutterFilterCutoffLow = unpack('@L', f.read(4))[0]
+                self.clutterFilterCutoffHigh = unpack('@L', f.read(4))[0]
+            else:
+                self.clutterFilterCutoffLow = unpack('@f', f.read(4))[0]
+                self.clutterFilterCutoffHigh = unpack('@f', f.read(4))[0]
 
         def __repr__(self):
             ...
@@ -138,19 +243,40 @@ class Dim6:
             f"\n\t\tCutoff Low: {self.clutterFilterCutoffLow}\n\t\tCutoff High: {self.clutterFilterCutoffHigh}\n"
 
     class VelocityBandwidthFiltering:
-        def __init__(self, velocityMin, velocityMax) -> None:
-            self.velocityMin = velocityMin
-            self.velocityMax = velocityMax
+        def __init__(self) -> None:
+            self.velocityMin: float
+            self.velocityMax: float
+
+        def load_binary(self, f):
+            self.velocityMin = unpack('@f', f.read(4))[0]
+            self.velocityMax = unpack('@f', f.read(4))[0]
+            f.seek(12, 1)
 
         def __repr__(self):
             ...
         def __str__(self) -> str:
             return f"\t\tVelocity Min: ${self.velocityMin}\n\t\tVelocity Max: ${self.velocityMax}\n"
 
-    def __init__(self, elementCount) -> None:
-        self.dim6: int = elementCount
+    def __init__(self) -> None:
+        self.dim6: int
         self.dim6element: set[tuple[Dim6.Dim6type, object]] = set()
 
+
+    def load_binary(self, f):
+        self.dim6 = unpack('@Q', f.read(8))[0]
+        dim6intents: list[int] = []
+        for _ in range(self.dim6):
+            dim6intents.append(unpack('@L', f.read(4))[0])
+        for intent in dim6intents:
+            if intent == self.Dim6type.EnhancedDoppler or intent == self.Dim6type.BrainMaskedDoppler:
+                f.seek(20, 1)
+            elif intent == self.Dim6type.ClutterFiltering:
+                clutterFiltering = self.ClutterFiltering()
+                self.dim6element.add((self.Dim6type.ClutterFiltering, clutterFiltering.load_binary(f)))
+            elif intent == self.Dim6type.VelocityBandFiltering:
+                velocityBandWidth = self.VelocityBandwidthFiltering()
+                self.dim6element.add((self.Dim6type.VelocityBandFiltering, velocityBandWidth.load_binary(f)))
+    
     def __repr__(self):
         ...
     def __str__(self) -> str:
@@ -174,22 +300,26 @@ class Probe:
         Phased = 3
         Matrix = 4
 
-    def __init__(self, name: str,
-                 probeType: ProbeType,
-                 probeCentralFrequency: float,
-                 probePitch: float,
-                 probeElevationAperture: float,
-                 probeRadiusOfCurvature: float,
-                 probeNumberOfElements: int,
-                 probeModel: str) -> None:
-        self.name = name
-        self.probeType = probeType
-        self.probeCentralFrequency = probeCentralFrequency
-        self.probePitch = probePitch
-        self.probeElevationAperture = probeElevationAperture
-        self.probeRadiusOfCorvature = probeRadiusOfCurvature
-        self.probeNumberOfElements = probeNumberOfElements
-        self.probeModel = probeModel
+    def __init__(self) -> None:
+        self.name: str
+        self.probeType: self.ProbeType
+        self.probeCentralFrequency: float
+        self.probePitch: float
+        self.probeElevationAperture: float
+        self.probeRadiusOfCurvature: float
+        self.probeNumberOfElements: float
+        self.probeModel: str
+
+    def load_binary(self, f):
+        self.probeType = self.ProbeType(unpack('@L', f.read(4))[0])
+        self.probeCentralFrequency = unpack('@d', f.read(8))[0]
+        self.probePitch = unpack('@d', f.read(8))[0]
+        self.probeElevationAperture = unpack('@d', f.read(8))[0]
+        f.seek(8, 1)
+        self.probeRadiusOfCurvature = unpack('@d', f.read(8))[0]
+        self.probeNumberOfElements = unpack('@H', f.read(2))[0]
+        self.probeModel = read_string_binary(f, '@H', 2)
+        self.name = read_string_binary(f, '@H', 2)
     
     def __repr__(self):
         ...
@@ -198,7 +328,7 @@ class Probe:
         f"probeCentralFrequency: {self.probeCentralFrequency}\n\t"\
         f"probePitch: {self.probePitch}\n\t"\
         f"probeElevationAperture: {self.probeElevationAperture}\n\t"\
-        f"probeRadiusOfCurvature: {self.probeRadiusOfCorvature}\n\t"\
+        f"probeRadiusOfCurvature: {self.probeRadiusOfCurvature}\n\t"\
         f"probeNumberOfElements: {self.probeNumberOfElements}\n\t"\
         f"probeModel: {self.probeModel}"
 
@@ -217,7 +347,15 @@ class ProbeToLabElements:
 
     def __init__(self, matricesCount) -> None:
         self.matricesCount = matricesCount
-        self.matricesList: list[ProbeToLabElements.ProbeToLabMatrices] = []
+        self.matricesList: list[self.ProbeToLabMatrices] = []
+
+    def load_binary(self, f):
+        probeElement = ProbeToLabElements(self.matricesCount)
+        for _ in range(self.matricesCount):
+            x = unpack('@d', f.read(8))[0]
+            y = unpack('@d', f.read(8))[0]
+            z = unpack('@d', f.read(8))[0]
+            probeElement.matricesList.append(ProbeToLabElements.ProbeToLabMatrices(x, y, z))
 
     def __repr__(self):
         ...

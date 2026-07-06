@@ -1,4 +1,4 @@
-from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC, read_scan
+from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
 from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType
 from tests.test_open import testDataPath
 
@@ -10,29 +10,29 @@ def test_check_fourCC():
 
 
 def test_scan():
-    scan = read_scan(
-        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"
+    scan = Scan(
+        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
     )
     assert scan is not None
 
 
 def test_scan_ULM_2D():
-    scan = read_scan(testDataPath + "/TestULM2D_v2.source.scan")
+    scan = Scan(testDataPath + "/TestULM2D_v2.source.scan", True)
     print(scan)
     assert scan is not None
 
 
 def test_scan_values():
-    scan = read_scan(
-        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"
+    scan = Scan(
+        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
     )
-    assert scan.sizeX == 103  # ty:ignore[unresolved-attribute]
+    assert scan.sizeX == 103
     assert len(scan.measuredTimes) == 5200  # ty:ignore[unresolved-attribute]
     assert scan.type.name == "Source"  # ty:ignore[unresolved-attribute]
 
 
 def test_scan_values_ULM_2D():
-    scan: Scan = read_scan(testDataPath + "/TestULM2D_v2.source.scan")  # ty:ignore[invalid-assignment]
+    scan: Scan = Scan(testDataPath + "/TestULM2D_v2.source.scan", True)  # ty:ignore[invalid-assignment]
     assert scan.sizeX == 128
     assert scan.sizeY == 1
     assert scan.sizeZ == 91
@@ -46,9 +46,10 @@ def test_scan_values_ULM_2D():
     assert scan.weight == 0.0
     assert scan.weightUnit == WeightUnitType.mg
     assert scan.type.name == "Source"
+    print(scan.voxels)
 
 def test_voxel_to_prob():
-    scan: Scan = read_scan(testDataPath + "/TestULM2D_v2.source.scan")  # ty:ignore[invalid-assignment]
+    scan: Scan = Scan(testDataPath + "/TestULM2D_v2.source.scan", True)  # ty:ignore[invalid-assignment]
     vTp = scan.get_VoxelToProbe()
     print("VoxelToProbeCreation")
     print(vTp)
