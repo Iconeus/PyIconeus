@@ -5,7 +5,6 @@ from ..models.Bps import Bps
 from ..models.Roi import Roi
 from ..models.Raw import Raw
 from ..io.roi.bri_reader import bri_reader_binary, bri_reader_hdf5
-from ..io.bps.bps_reader import read_h5_bps, read_binary_bps
 from ..io.raw.raw_reader import raw_reader_binary, raw_reader_hdf5
 import struct
 import os
@@ -20,7 +19,7 @@ BPS_4CC_STR = "bps_"
 RAW_4CC_STR = "raw_"
 
 
-def check_fourCC(filepath, str_check) -> bool | FileNotFoundError:
+def check_fourCC(filepath, str_check) -> bool:
     try:
         with open(filepath, "rb") as f:
             fourCC = ""
@@ -52,10 +51,7 @@ def read_bri(filepath) -> Roi:
 
 
 def read_bps(filepath: str) -> Bps | None:
-    if check_fourCC(filepath, BPS_4CC_STR):
-        return read_binary_bps(filepath)
-    else:
-        return read_h5_bps(filepath)
+    return Bps(filepath, check_fourCC(filepath, BPS_4CC_STR))
 
 
 def read_raw(filepath, fileheader):
