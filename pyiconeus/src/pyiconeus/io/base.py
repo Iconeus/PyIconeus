@@ -1,5 +1,4 @@
 from typing import Union
-from .v2.v2 import read_binary
 from ..models.Scan import Scan
 from ..models.Bps import Bps
 from ..models.Roi import Roi
@@ -24,7 +23,7 @@ def check_fourCC(filepath, str_check) -> bool:
             for _ in range(4):
                 fourCC += str(struct.unpack("@s", f.read(1))[0], encoding="utf-8")
         return fourCC == str_check
-    except:
+    except:  # noqa: E722
         return False
 
 
@@ -32,8 +31,7 @@ def read_scan(filepath) -> Scan:
     return Scan(filepath, check_fourCC(filepath, SCAN_4CC_STR))
 
 def read_bri(filepath) -> Roi:
-    # check v1 or v2
-    return Roi(filepath, check_fourCC(filepath, ROI_4CC_STR))  # v2
+    return Roi(filepath, check_fourCC(filepath, ROI_4CC_STR))
 
 def read_bps(filepath: str) -> Bps:
     return Bps(filepath, check_fourCC(filepath, BPS_4CC_STR))
