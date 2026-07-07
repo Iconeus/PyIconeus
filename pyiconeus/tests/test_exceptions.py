@@ -15,4 +15,6 @@ def test_invalid_file_open_path():
 
 def test_valid_format_invalid_content():
     # Needs to be changed, interprets it as a scan v1 and return None
-    open_path(".\\tests\\data\\empty.scan") is None
+    with pytest.raises(OSError) as exception:
+        open_path(".\\tests\\data\\empty.scan") is None
+    assert (str(exception.value) == "Unable to synchronously open file (file signature not found)")

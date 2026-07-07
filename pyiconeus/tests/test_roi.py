@@ -19,3 +19,5 @@ def test_roi_dispatch_version():
     print(roi_test_binary)
     assert roi_test_hdf5 is not None
     assert roi_test_binary is not None
+
+test_load_hdf5()

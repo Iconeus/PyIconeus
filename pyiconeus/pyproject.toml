@@ -27,9 +27,8 @@ classifiers = [
 dependencies = [
 "numpy",
 "pytz",
-"xarray",
 "h5py",
-"pyfus @ git+https://github.com/Iconeus/pyfus.git",
+"transforms3d",
 ]
 
 [project.urls]

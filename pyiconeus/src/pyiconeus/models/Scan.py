@@ -1,9 +1,11 @@
-from struct import unpack
-from enum import IntEnum
-from ..utils.utils import translationMatrix, scaleMatrix, read_string_binary
+import h5py
 import datetime
 import pytz
 import numpy as np
+from struct import unpack
+from enum import IntEnum
+from ..utils.utils import translationMatrix, scaleMatrix, read_string_binary, hdf5_string_reader
+from ..utils.consolidation import consolidate_scan
 
 from ..models.Bps import Bps
 
@@ -57,6 +59,45 @@ class Scan:
         self.bps: Bps
         if is_binary:
             self.load_scan_binary(filepath)
+        else:
+            self.load_scan_hdf5(filepath)
+
+
+    def load_scan_hdf5(self, filepath) -> None:
+        with h5py.File(filepath, "r") as f:
+            metaData = f["scanMetaData"]
+            # self.acquisitionDate: datetime.datetime = datetime.datetime.fromisoformat(hdf5_string_reader(metaData["Date"]))
+            self.projectTag = hdf5_string_reader(metaData["Project_tag"])
+            self.scanTag = hdf5_string_reader(metaData["Scan_tag"])
+            self.subjectTag = hdf5_string_reader(metaData["Subject_tag"])
+            self.sessionTag = hdf5_string_reader(metaData["Session_tag"])
+            type: str = hdf5_string_reader(metaData["Type"])
+            self.type = ScanType(0) if type == "source" else ScanType(1)
+            self.username = hdf5_string_reader(metaData["User_name"])
+            self.projectDescription = hdf5_string_reader(metaData["Comment"])
+            acqMetaData = f["acqMetaData"]
+            _acquisitionMode = hdf5_string_reader(acqMetaData["acquisitionMode"])
+            match _acquisitionMode:
+                case "2DScan":
+                    self.acquisitionMode = AcquisitionMode(0)
+                case "3DScan":
+                    self.acquisitionMode = AcquisitionMode(1)
+                case "4DScan":
+                    self.acquisitionMode = AcquisitionMode(2)
+                case "4DscanCustom":
+                    self.acquisitionMode = AcquisitionMode(3)
+            self.voxDim = VoxDim()
+            self.voxDim.load_hdf5(acqMetaData["voxDim"])
+            (data, time) = consolidate_scan(f)
+            self.sizeX = data.shape[0]
+            self.sizeY = data.shape[1]
+            self.sizeZ = data.shape[2]
+            self.nTime = data.shape[3]
+            self.nPose = data.shape[4] if data.ndim > 4 else 1
+            self.measuredTimes = time.reshape(-1).tolist()
+            self.voxels = data
+            self.probe = Probe()
+            self.depth = Depth()
 
 
     def load_scan_binary(self, filepath):
@@ -89,7 +130,9 @@ class Scan:
             self.probe.load_binary(f)
             depthNear = unpack('@d', f.read(8))[0]
             depthFar = unpack('@d', f.read(8))[0]
-            self.depth = Depth(depthNear, depthFar)
+            self.depth = Depth()
+            self.depth.depthNear = depthNear
+            self.depth.depthFar = depthFar
             self.ultrafastTransmitFrequency = unpack('@d', f.read(8))[0]
             self.pulseRepetitionFrequency = unpack('@d', f.read(8))[0]
             self.ultrafastSamplingFrequency = unpack('@d', f.read(8))[0]
@@ -179,6 +222,12 @@ class VoxDim:
         self.dt: float = dt
         self.dr: float = dr
         self.dtheta: float = dtheta
+
+    def load_hdf5(self, voxDimData):
+        self.dx = voxDimData["dx"][0]
+        self.dy = voxDimData["dy"][0]
+        self.dz = voxDimData["dz"][0]
+        self.dt = voxDimData["dt"][0]
 
     def load_binary(self, f):
         self.dx = unpack('@d', f.read(8))[0]
@@ -366,9 +415,9 @@ class ProbeToLabElements:
         return rep
 
 class Depth:
-    def __init__(self, depthNear, depthFar) -> None:
-        self.depthNear: float = depthNear
-        self.depthFar: float = depthFar
+    def __init__(self) -> None:
+        self.depthNear: float
+        self.depthFar: float
     
     def __repr__(self):
         ...

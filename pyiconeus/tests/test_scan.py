@@ -55,5 +55,19 @@ def test_voxel_to_prob():
     print(vTp)
     assert vTp is not None
 
+
+def test_load_v1():
+#     # scan: Scan = Scan(testDataPath + "/TestULM2D.source.scan", False)
+    scanv1: Scan = Scan(testDataPath + "/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False)
+    assert scanv1 is not None
+
+def test_compare_v1_v2_metaData():
+    scanv1: Scan = Scan(testDataPath + "/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False)
+    scanv2: Scan = Scan(testDataPath + "/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan", True)
+    assert scanv1.projectTag == scanv2.projectTag
+    assert scanv1.sessionTag == scanv2.sessionTag
+    assert scanv1.subjectTag == scanv2.subjectTag
+    assert scanv1.scanTag == scanv2.scanTag
+    
 if __name__ == '__main__':
-    test_voxel_to_prob()
+    test_load_v1()

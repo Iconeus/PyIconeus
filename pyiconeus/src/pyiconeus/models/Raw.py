@@ -19,7 +19,9 @@ class Raw:
             self.acquisitionMode = h5["F13"][()][0][0].decode("utf-8")
             depthData = decryptData(h5["F6"], 6)
             voxDimData = decryptData(h5["F8"], 8)
-            self.depth = Depth(depthData[0], depthData[1])
+            self.depth = Depth()
+            self.depth.depthNear = depthData[0]
+            self.depth.depthFar = depthData[1]
             self.voxDim = VoxDim(voxDimData[0], voxDimData[1], voxDimData[2])
             self.isCrypted = bool(decryptData(h5["F12"], 12)[0])
 

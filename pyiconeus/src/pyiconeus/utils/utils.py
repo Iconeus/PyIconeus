@@ -1,13 +1,17 @@
 import struct
 import numpy as np
+import numpy.typing as npt
 import h5py
 
 encoding = "utf-8"
 
 
-def hdf5_string_reader(hdf5_dataset):
+def hdf5_string_reader(hdf5_dataset) -> str:
     if h5py.check_string_dtype(hdf5_dataset.dtype).encoding == "utf-8":
-        strings = hdf5_dataset[()]
+        bytes_data = hdf5_dataset[()]
+        strings = np.array(
+            [b.decode("ascii") for b in bytes_data.flat], dtype=object
+        ).reshape(bytes_data.shape)[0][0]
     else:
         # HDF5 ASCII strings
         bytes_data = hdf5_dataset[()]
@@ -51,3 +55,26 @@ def decryptData(value, n: int):
     if nbrc.ndim < 3:
         nbr = (nbrc - 72) / (1005 * n)
     return nbr
+
+
+def squeeze_trailing(arr: npt.NDArray, initial: int = 0) -> npt.NDArray:
+    """Squeeze trailing unitary dimensions.
+
+    Parameters
+    ----------
+    arr : numpy.ndarray
+        Array to squeeze trailing unitary dimensions from.
+    initial : int, optional
+        Axes up to index `initial` (not included) will not be squeezed even if they're
+        trailing unitary. Default is 0.
+
+    Returns
+    -------
+    numpy.ndarray
+        The squeezed array.
+    """
+    non_unitary_dims = (np.asarray(arr.shape) != 1).nonzero()[0]
+    last_non_unitary_dim = non_unitary_dims[-1] if non_unitary_dims.size > 0 else 0
+    arr.shape = arr.shape[:initial] + arr.shape[initial : (last_non_unitary_dim + 1)]
+
+    return arr

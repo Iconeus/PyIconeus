@@ -25,7 +25,9 @@ def test_raw_val():
     metadata.acquisitionMode = "2Dscan"
     depthData = decryptData(np.array([6102, 60372]), 6)
     voxDimData = decryptData(np.array([956.4, 3288, 864.4223999999999]), 8)
-    metadata.depth = Depth(depthData[0], depthData[1])
+    metadata.depth = Depth()
+    metadata.depth.depthNear = depthData[0]
+    metadata.depth.depthFar = depthData[1]
     metadata.voxDim = VoxDim(voxDimData[0], voxDimData[1], voxDimData[2])
     assert metadata.transmitFrequency == raw.metadata.transmitFrequency
     assert metadata.prf == raw.metadata.prf
