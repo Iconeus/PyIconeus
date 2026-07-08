@@ -97,12 +97,18 @@ class Scan:
                     self.acquisitionMode = AcquisitionMode(3)
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"])
-            (data, time, timeIndices) = consolidate_scan(f)
+            (data, time, timeIndices, probeTranslation, probeRotation) = consolidate_scan(f)
+            # print(probeTranslation)
+            # print(probeRotation)
             self.sizeX: int = data.shape[0]
             self.sizeY: int = data.shape[1]
             self.sizeZ: int = data.shape[2]
             self.nTime: int = data.shape[3]
             self.nPose: int | Literal[1] = data.shape[4] if data.ndim > 4 else 1
+            self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
+            self.probeToLabsTranslations.setProbe2LabTransform(probeTranslation)
+            self.probeToLabsRotations = ProbeToLabElements(self.nPose)
+            self.probeToLabsRotations.setProbe2LabTransform(probeRotation)
             self.measuredTimes: list[float] = time.reshape(-1).tolist()
             self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
             self.voxels: np.ndarray = data
@@ -440,6 +446,10 @@ class ProbeToLabElements:
     def __init__(self, matricesCount) -> None:
         self.matricesCount: int = matricesCount
         self.matricesList: list[self.ProbeToLabMatrices] = []
+
+    def setProbe2LabTransform(self, transform: np.ndarray) -> None:
+        for t in transform:
+            self.matricesList.append(self.ProbeToLabMatrices(t[0], t[1], t[2]))
 
     def load_binary(self, f) -> None:
         probeElement = ProbeToLabElements(self.matricesCount)
