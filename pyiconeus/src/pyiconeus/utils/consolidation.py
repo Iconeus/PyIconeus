@@ -2,6 +2,7 @@
 import warnings
 
 import numpy as np
+import h5py
 import numpy.typing as npt
 from transforms3d.euler import euler2mat, mat2euler
 
@@ -97,7 +98,7 @@ def _fix_multiarray_probe(
     return data, time, voxels2probe, new_probe2lab
 
 
-def _fix_voxels2probe_for_pyfus(
+def _fix_voxels2probe(
     voxels2probe: npt.NDArray, data_shape_z: int
 ) -> npt.NDArray:
     """Fix a `voxels2probe` affine transformation for use in PyfUS.
@@ -247,7 +248,7 @@ def _deconvolve_probe_path(
 
 
 def consolidate_scan(
-    dataset, copy: bool = True
+    dataset: h5py.Group, copy: bool = True
 ) -> tuple[npt.NDArray, npt.NDArray]:
     """Consolidate a scan acquired using regular probe poses.
 
@@ -298,7 +299,7 @@ def consolidate_scan(
     probe2lab: npt.NDArray = smeta["probeToLab"][()]
     voxels2probe: npt.NDArray = smeta["voxelsToProbe"][()]
 
-    voxels2probe: npt.NDArray = _fix_voxels2probe_for_pyfus(voxels2probe, data.shape[2])
+    voxels2probe: npt.NDArray = _fix_voxels2probe(voxels2probe, data.shape[2])
 
     # Is multiarray
     if data.shape[1] == 4 and data.ndim > 4:
