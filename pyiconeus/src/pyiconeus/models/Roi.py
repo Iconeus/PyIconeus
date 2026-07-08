@@ -20,7 +20,7 @@ class Roi:
         if is_binary:
             with open(filepath, "rb") as f:
                 f.seek(12)
-                roi_count = unpack("@L", f.read(4))[0]
+                roi_count: int = unpack("@L", f.read(4))[0]
                 for _ in range(roi_count):
                     # Vertices
                     vertices_count: int = unpack("@L", f.read(4))[0]
@@ -32,12 +32,12 @@ class Roi:
 
                     # Triangles
                     indices_count: int = unpack("@L", f.read(4))[0]
-                    triangles: np.ndarray = np.ndarray(shape=(indices_count, 3))
+                    triangles: np.ndarray = np.ndarray(shape=(indices_count, 3), dtype=int)
                     for i in range(indices_count):
-                        triangles[i][0] = int(unpack("@L", f.read(4))[0])
-                        triangles[i][1] = int(unpack("@L", f.read(4))[0])
-                        triangles[i][2] = int(unpack("@L", f.read(4))[0])
-                    color = RoiColor(
+                        triangles[i][0] = unpack("@L", f.read(4))[0]
+                        triangles[i][1] = unpack("@L", f.read(4))[0]
+                        triangles[i][2] = unpack("@L", f.read(4))[0]
+                    color: RoiColor = RoiColor(
                         unpack("@f", f.read(4))[0],
                         unpack("@f", f.read(4))[0],
                         unpack("@f", f.read(4))[0],
@@ -68,9 +68,9 @@ class Roi:
 
 class RoiColor:
     def __init__(self, r: float, g: float, b: float):
-        self.r = r
-        self.g = g
-        self.b = b
+        self.r: float = r
+        self.g: float = g
+        self.b: float = b
 
     def __repr__(self): ...
     def __str__(self):
@@ -81,10 +81,10 @@ class RoiElements:
     def __init__(
         self, color: RoiColor, vertices: np.ndarray, faces: np.ndarray, name: str
     ):
-        self.name = name
-        self.vertices = vertices
-        self.faces = faces
-        self.color = color
+        self.name: str = name
+        self.vertices: np.ndarray = vertices
+        self.faces: np.ndarray = faces
+        self.color: RoiColor = color
 
     def __repr__(self): ...
     def __str__(self):

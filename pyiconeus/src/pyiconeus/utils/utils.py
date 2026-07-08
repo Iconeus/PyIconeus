@@ -21,7 +21,7 @@ def hdf5_string_reader(hdf5_dataset) -> str:
     return strings
 
 
-def hdf5_printer(hdf5_dataset):
+def hdf5_printer(hdf5_dataset) -> None:
     print("HDF5 element:")
     print("Shape: " + str(hdf5_dataset.shape[0]) + "," + str(hdf5_dataset.shape[1]))
     print("Size: " + str(hdf5_dataset.size))
@@ -39,21 +39,21 @@ def read_string_binary(f, format, bytes_size) -> str:
     return rep
 
 
-def translationMatrix(dx, dy, dz):
+def translationMatrix(dx, dy, dz) -> np.ndarray:
     return np.array([[1, 0, 0, dx], [0, 1, 0, dy], [0, 0, 1, dz], [0, 0, 0, 1]])
 
 
-def scaleMatrix(sx, sy, sz):
+def scaleMatrix(sx, sy, sz) -> np.ndarray:
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
 
-def decryptData(value, n: int):
+def decryptData(value, n: int) -> np.ndarray:
     if value.shape[0] == 1:
-        nbrc = np.asarray(value, dtype=float)[0]
+        nbrc: np.ndarray = np.asarray(value, dtype=float)[0]
     else:
         nbrc = np.asarray(value, dtype=float)
-    nbr = nbrc.copy()
+    nbr: np.ndarray = nbrc.copy()
     if nbrc.ndim < 3:
-        nbr = (nbrc - 72) / (1005 * n)
+        nbr: np.ndarray = (nbrc - 72) / (1005 * n)
     return nbr
 
 

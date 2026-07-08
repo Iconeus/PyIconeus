@@ -68,6 +68,7 @@ def test_compare_v1_v2_metaData():
     assert scanv1.sessionTag == scanv2.sessionTag
     assert scanv1.subjectTag == scanv2.subjectTag
     assert scanv1.scanTag == scanv2.scanTag
+    assert scanv1.acquisitionDate == scanv2.acquisitionDate
     
 if __name__ == '__main__':
     test_load_v1()
