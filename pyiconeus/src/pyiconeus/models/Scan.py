@@ -72,8 +72,10 @@ class Scan:
     def load_scan_hdf5(self, filepath) -> None:
         with h5py.File(filepath, "r") as f:
             metaData: h5py.Dataset = f["scanMetaData"]
+            date_str: str = hdf5_string_reader(metaData["Date"])
+            print(date_str)
             date: datetime = datetime.strptime(
-                hdf5_string_reader(metaData["Date"]), "%Y-%m-%d %H:%M:%S"
+                date_str if date_str else "1970-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"
             )
             self.acquisitionDate = date.replace(tzinfo=pytz.utc)
             self.projectTag = hdf5_string_reader(metaData["Project_tag"])
@@ -87,17 +89,19 @@ class Scan:
             acqMetaData: h5py.Dataset = f["acqMetaData"]
             _acquisitionMode = hdf5_string_reader(acqMetaData["acquisitionMode"])
             match _acquisitionMode:
-                case "2DScan":
+                case "2Dscan":
                     self.acquisitionMode = AcquisitionMode(0)
-                case "3DScan":
+                case "3Dscan":
                     self.acquisitionMode = AcquisitionMode(1)
-                case "4DScan":
+                case "4Dscan":
                     self.acquisitionMode = AcquisitionMode(2)
                 case "4DscanCustom":
                     self.acquisitionMode = AcquisitionMode(3)
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"])
-            (data, time, timeIndices, probeTranslation, probeRotation) = consolidate_scan(f)
+            (data, time, timeIndices, probeTranslation, probeRotation) = (
+                consolidate_scan(f)
+            )
             # print(probeTranslation)
             # print(probeRotation)
             self.sizeX: int = data.shape[0]
@@ -449,15 +453,14 @@ class ProbeToLabElements:
 
     def setProbe2LabTransform(self, transform: np.ndarray) -> None:
         for t in transform:
-            self.matricesList.append(self.ProbeToLabMatrices(t[0], t[1], t[2]))
+            self.matricesList.append(self.ProbeToLabMatrices(float(t[0]), float(t[1]), float(t[2])))
 
     def load_binary(self, f) -> None:
-        probeElement = ProbeToLabElements(self.matricesCount)
         for _ in range(self.matricesCount):
             x = unpack("@d", f.read(8))[0]
             y = unpack("@d", f.read(8))[0]
             z = unpack("@d", f.read(8))[0]
-            probeElement.matricesList.append(
+            self.matricesList.append(
                 ProbeToLabElements.ProbeToLabMatrices(x, y, z)
             )
 

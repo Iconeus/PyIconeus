@@ -339,12 +339,12 @@ def consolidate_scan(
         warnings.warn("Scan has only one probe pose.")
         return data, time, timeOriginal, probe2lab.T[3][:3], probe2lab.T[0]
 
-    probe_translation, probe_rotation, _ = _deconvolve_probe_path(probe2lab)
+    translations, rotations, _ = _deconvolve_probe_path(probe2lab)
 
-    probe2labTranslation = np.ndarray(shape=(len(probe_rotation), 3))
-    probe2labRotation: npt.NDArray = np.ndarray(shape=(len(probe_rotation), 3))
-    for rotation_index, rotation in enumerate(probe_rotation):
-        translation_same_rotation = probe2lab[rotation_index * len(probe_rotation): rotation_index * len(probe_rotation) + len(probe_rotation)]
+    probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
+    probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
+    for rotation_index, rotation in enumerate(rotations):
+        translation_same_rotation = probe2lab[rotation_index * len(rotations): rotation_index * len(rotations) + len(rotations)]
         translation_same_rotation = np.array(
             [
                 np.mean(translation_same_rotation.T[3][0]),
@@ -355,11 +355,6 @@ def consolidate_scan(
         probe2labTranslation[rotation_index] = translation_same_rotation
         probe2labRotation[rotation_index] = np.array([0.0, 0.0, np.radians(rotation)])
     
-
-    translations , rotations, _ = _deconvolve_probe_path(qform)
-
-    if len(rotations) > 1:
-        raise ValueError("Rotational scans are not yet supported.")
 
     translation_steps: npt.NDArray = np.diff(translations)
     # Rounding is necessary to avoid numerical errors when computing the consolidated
@@ -438,6 +433,6 @@ def consolidate_scan(
     #             consolidated_affines[affines_type] @ rescaling
     #         )
 
-    data = squeeze_trailing(data, initial=3)
+    data = squeeze_trailing(data, initial=4)
 
     return data, time, theoretical_time_indices, probe2labTranslation, probe2labRotation
