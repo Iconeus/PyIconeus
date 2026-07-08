@@ -13,7 +13,8 @@ def _fix_multiarray_probe(
     time: npt.NDArray,
     voxels2probe: npt.NDArray,
     probe2lab: npt.NDArray,
-) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
+    timeOriginal: npt.NDArray
+) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
     """Fix data and affine transformations acquired using the multi-array probe.
 
     The multi-array probe consists of 4 independent linear probes stacked along the
@@ -64,6 +65,12 @@ def _fix_multiarray_probe(
         time = time[:, None]
     time = np.repeat(time, data.shape[1], axis=1)
 
+
+    
+    if timeOriginal is not None:
+            if timeOriginal.ndim == 1:
+                timeOriginal = timeOriginal[:, None]
+            timeOriginal = np.repeat(timeOriginal, data.shape[1], axis=1)
     # Each probe in the multi-array probe is considered a separate probe pose after
     # reshaping because the probes are separated by 2.1 mm, i.e. way more than the slice
     # width of ~400 µm.
@@ -95,7 +102,11 @@ def _fix_multiarray_probe(
     time = time[:, sorting_indices]
     new_probe2lab = new_probe2lab[sorting_indices, ...]
 
-    return data, time, voxels2probe, new_probe2lab
+    
+    if timeOriginal is not None:
+            timeOriginal = timeOriginal[:, sorting_indices]
+
+    return data, time, voxels2probe, new_probe2lab, timeOriginal
 
 
 def _fix_voxels2probe(
@@ -249,7 +260,7 @@ def _deconvolve_probe_path(
 
 def consolidate_scan(
     dataset: h5py.Group, copy: bool = True
-) -> tuple[npt.NDArray, npt.NDArray]:
+) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
     """Consolidate a scan acquired using regular probe poses.
 
     Using linear or multi-array probes, whole volumes are generally acquired
@@ -296,6 +307,21 @@ def consolidate_scan(
     if n_poses == 1:
         time = time[:, 0]
 
+    timeOriginalRaw: npt.NDArray = smeta["timeOriginal"][()]
+    integrationTime: float = smeta["voxDim"]["dt"][()]  # ty:ignore[invalid-assignment]
+
+    
+    sorted_time_original: npt.NDArray = np.sort(timeOriginalRaw, axis=None)
+    dt: float = (
+        sorted_time_original[1] - sorted_time_original[0]
+        if sorted_time_original.size > 1
+        else sorted_time_original[0]
+    )
+ 
+    timeOriginal: npt.NDArray = timeOriginalRaw.reshape((-1, n_poses))
+    if n_poses == 1:
+        timeOriginal = timeOriginal[:, 0]
+
     probe2lab: npt.NDArray = smeta["probeToLab"][()]
     voxels2probe: npt.NDArray = smeta["voxelsToProbe"][()]
 
@@ -303,8 +329,8 @@ def consolidate_scan(
 
     # Is multiarray
     if data.shape[1] == 4 and data.ndim > 4:
-        data, time, voxels2probe, probe2lab = _fix_multiarray_probe(
-            data, time, voxels2probe, probe2lab
+        data, time, voxels2probe, probe2lab , timeOriginal= _fix_multiarray_probe(
+            data, time, voxels2probe, probe2lab, timeOriginal
         )
 
     qform: npt.NDArray = np.squeeze(probe2lab @ voxels2probe)
@@ -314,7 +340,7 @@ def consolidate_scan(
     translations, rotations, _ = _deconvolve_probe_path(qform)
     if data.ndim < 5:
         warnings.warn("Scan has only one probe pose.")
-        return data, time
+        return data, time, timeOriginal
 
     if len(rotations) > 1:
         raise ValueError("Rotational scans are not yet supported.")
@@ -363,6 +389,11 @@ def consolidate_scan(
         data = data[:, pose_order]
 
     time: npt.NDArray = time[:, pose_order].copy()
+
+    timeOriginal = timeOriginal[:, pose_order].copy()
+    theoretical_time_indices: npt.NDArray = np.round(
+        (timeOriginal - integrationTime) / dt
+    )
     # Rounding is necessary to avoid numerical errors when computing the
     # consolidated affine.
 
@@ -391,4 +422,4 @@ def consolidate_scan(
 
     data = squeeze_trailing(data, initial=3)
 
-    return data, time
+    return data, time, theoretical_time_indices

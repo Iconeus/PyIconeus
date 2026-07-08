@@ -97,13 +97,14 @@ class Scan:
                     self.acquisitionMode = AcquisitionMode(3)
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"])
-            (data, time) = consolidate_scan(f)
+            (data, time, timeIndices) = consolidate_scan(f)
             self.sizeX: int = data.shape[0]
             self.sizeY: int = data.shape[1]
             self.sizeZ: int = data.shape[2]
             self.nTime: int = data.shape[3]
             self.nPose: int | Literal[1] = data.shape[4] if data.ndim > 4 else 1
             self.measuredTimes: list[float] = time.reshape(-1).tolist()
+            self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
             self.voxels: np.ndarray = data
             self.probe = Probe()
             self.depth = Depth()
