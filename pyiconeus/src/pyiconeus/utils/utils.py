@@ -78,3 +78,25 @@ def squeeze_trailing(arr: npt.NDArray, initial: int = 0) -> npt.NDArray:
     arr.shape = arr.shape[:initial] + arr.shape[initial : (last_non_unitary_dim + 1)]
 
     return arr
+
+def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDArray:
+    """Applique une transformation affine à des points 3D.
+
+    Équivalent de `affine3d.transformPointsForward` (MATLAB), avec la convention
+    numpy (vecteur colonne) : `tform @ [x, y, z, 1]`.
+
+    Parameters
+    ----------
+    tform : (4, 4) ndarray
+        Matrice affine homogène.
+    points : (N, 3) ndarray
+        Points à transformer.
+
+    Returns
+    -------
+    (N, 3) ndarray
+        Points transformés.
+    """
+    # homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])
+    return points @ tform[:3, :3].T + tform[:3, 3]
+    # return (tform @ homogeneous.T).T[:, :3]

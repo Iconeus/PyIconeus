@@ -10,6 +10,7 @@ from ..utils.utils import (
     scaleMatrix,
     read_string_binary,
     hdf5_string_reader,
+    transform_points_forward,
 )
 from ..utils.consolidation import consolidate_scan
 
@@ -118,6 +119,8 @@ class Scan:
             self.voxels: np.ndarray = data
             self.probe = Probe()
             self.depth = Depth()
+            voxel2Probe = acqMetaData["voxelsToProbe"][:]
+            self.depth.fill_default(voxel2Probe, self.sizeZ)
 
     def load_scan_binary(self, filepath) -> None:
         with open(filepath, "rb") as f:
@@ -476,6 +479,12 @@ class Depth:
     def __init__(self) -> None:
         self.depthNear: float
         self.depthFar: float
+    
+    def fill_default(self, voxel2probe:np.ndarray, sizeZ: float):
+        tmp: np.ndarray = transform_points_forward(voxel2probe, np.array([1, 1, 1]))
+        self.depthNear = float(abs(tmp[2]) * 1e3)
+        tmp = transform_points_forward(voxel2probe, np.array([1, 1, sizeZ]))
+        self.depthFar = float(abs(tmp[2]) * 1e3)
 
     def __repr__(self): ...
     def __str__(self) -> str:
