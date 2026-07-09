@@ -75,6 +75,7 @@ class Scan:
             metaData: h5py.Dataset = f["scanMetaData"]
             date_str: str = hdf5_string_reader(metaData["Date"])
             print(date_str)
+            self.probe = Probe()
             date: datetime = datetime.strptime(
                 date_str if date_str else "1970-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"
             )
@@ -88,16 +89,7 @@ class Scan:
             self.username = hdf5_string_reader(metaData["User_name"])
             self.projectDescription = hdf5_string_reader(metaData["Comment"])
             acqMetaData: h5py.Dataset = f["acqMetaData"]
-            _acquisitionMode = hdf5_string_reader(acqMetaData["acquisitionMode"])
-            match _acquisitionMode:
-                case "2Dscan":
-                    self.acquisitionMode = AcquisitionMode(0)
-                case "3Dscan":
-                    self.acquisitionMode = AcquisitionMode(1)
-                case "4Dscan":
-                    self.acquisitionMode = AcquisitionMode(2)
-                case "4DscanCustom":
-                    self.acquisitionMode = AcquisitionMode(3)
+            self.matchAcquisitionMode(acqMetaData)
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"])
             (data, time, timeIndices, probeTranslation, probeRotation) = (
@@ -117,10 +109,85 @@ class Scan:
             self.measuredTimes: list[float] = time.reshape(-1).tolist()
             self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
             self.voxels: np.ndarray = data
-            self.probe = Probe()
-            self.depth = Depth()
-            voxel2Probe = acqMetaData["voxelsToProbe"][:]
-            self.depth.fill_default(voxel2Probe, self.sizeZ)
+
+    def matchAcquisitionMode(self, acqMetaData: h5py.Dataset):
+        _acquisitionMode = hdf5_string_reader(acqMetaData["acquisitionMode"])
+        match _acquisitionMode:
+            case "2Dscan":
+                self.acquisitionMode = AcquisitionMode._2DScan
+                self.probe.probeType = Probe.ProbeType.Linear
+            case "3Dscan":
+                self.acquisitionMode = AcquisitionMode._3DScan
+                if acqMetaData["imgDim"]["npose"][()] == 4:
+                    self.probe.probeType = Probe.ProbeType.MultiArray
+                else:
+                    self.probe.probeType = Probe.ProbeType.Linear
+            case "4Dscan":
+                self.acquisitionMode = AcquisitionMode._4DScan
+                if acqMetaData["imgDim"]["npose"][()] == 4:
+                    self.probe.probeType = Probe.ProbeType.MultiArray
+                elif acqMetaData["imgDim"]["npose"][()] == 1 and acqMetaData["imgDim"]["sizeY"][()] == 4:
+                    self.probe.probeType = Probe.ProbeType.MultiArray
+                else:
+                    self.probe.probeType = Probe.ProbeType.Linear
+            case "4DscanCustom":
+                self.acquisitionMode = AcquisitionMode._4DScanCustom
+                self.probe.probeType = Probe.ProbeType.Linear
+            case "4DscanRCA":
+                self.acquisitionMode = AcquisitionMode._4DscanRCA
+                self.probe.probeType = Probe.ProbeType.RCA
+            case "3DscanRCA":
+                self.acquisitionMode = AcquisitionMode._3DscanRCA
+                self.probe.probeType = Probe.ProbeType.RCA
+
+    def fill_default(self, f: h5py.Group):
+        self.depth = Depth()
+        voxel2Probe = f["acqMetaData"]["voxelsToProbe"][:]
+        self.depth.fill_default(voxel2Probe, self.sizeZ)
+        dzIcoBright = np.fix(1e8 * 1540*1e-6/12.5)
+        dzRCA12 = dzIcoBright
+        dzIcoPrime = np.fix(1e8 * 1540 * 1e-6/15.625)
+        dzRCA15 = dzIcoPrime
+        dzIcoRange = np.fix(1e8 * 1540 * 1e-6/8.9290)
+        dzIcoDeep = np.fix(1e8 * 1540 * 1e-6 / 6.25)
+        myTolerance: float = 2
+        convertedDz = np.fix(f["acqMetaData"]["voxDim"]["dz"][()] * 1e8)
+        if self.probe.probeType == Probe.ProbeType.MultiArray:
+            self.probe.name = "IcoPrime 4D MultiArray"
+        elif self.probe.probeType == Probe.ProbeType.RCA:
+            if abs(convertedDz - dzRCA15) < myTolerance:
+                self.probe.name = "IcoPrime 4D RCA"
+            else:
+                self.probe.name = "IcoBright 4D RCA"
+        else:
+            if abs(convertedDz - dzIcoRange) < myTolerance:
+                self.probe.name = "IcoRange"
+            elif abs(convertedDz - dzIcoDeep) < myTolerance:
+               self.probe.name = "IcoDeep"
+            elif abs(convertedDz - dzIcoBright) < myTolerance:
+                self.probe.name = "IcoBright"
+            elif abs(convertedDz - dzIcoPrime) < myTolerance:
+                sizeX = f["acqMetaData"]["imgDim"]["sizeX"][()]
+                if sizeX == 128:
+                    self.probe.name = "IcoPrime"
+                elif sizeX == 192:
+                    self.probe.name = "IcoPrimeXL"
+                else:
+                    self.probe.name = "IcoPrimeMini"
+            else:
+                self.probe.name = "unknown"
+        self.probe.fill_default()
+        self.integrationWindowDuration = f["acqMetaData"]["voxDim"]["dt"][()]
+        self.ultrafastTransmitFrequency = 15.625
+        self.ultrafastSamplingFrequency = 62.5
+        self.planeWaveAngles = np.linspace(-10,2,10).tolist()
+        if self.probe.name == "IcoPrime 4D MultiArray":
+            self.planeWaveAngles = np.linspace(-12, 12, 8).tolist()
+        self.transmitVoltage = 25
+        self.pulseRepetitionFrequency = len(self.planeWaveAngles) * 500
+        self.isMultiplane = False
+        self.delayAfterTrigger = 0
+        self.sequenceName = "default sequence"
 
     def load_scan_binary(self, filepath) -> None:
         with open(filepath, "rb") as f:
@@ -395,6 +462,8 @@ class AcquisitionMode(IntEnum):
     _3DScan = 1
     _4DScan = 2
     _4DScanCustom = 3
+    _4DscanRCA = 4
+    _3DscanRCA = 5
 
 
 class Probe:
@@ -414,6 +483,18 @@ class Probe:
         self.probeRadiusOfCurvature: float
         self.probeNumberOfElements: float
         self.probeModel: str
+
+    def fill_default(self, ):
+        if self.name == "IcoPrime" or self.name == "unknown" or self.name == "IcoPrime 4D MultiArray":
+            self.probeCentralFrequency = 15.625
+            self.probePitch = 0.11
+            self.probeElevationAperture = 1.5
+            self.probeNumberOfElements = 128
+            self.probeModel = '2392'
+            if self.name == "IcoPrime 4D MultiArray":
+                self.probeNumberOfElements = 256
+                self.probeModel = '2390'
+        self.probeRadiusOfCurvature = 0
 
     def load_binary(self, f) -> None:
         self.probeType = self.ProbeType(unpack("@L", f.read(4))[0])
