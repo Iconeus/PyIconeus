@@ -1,3 +1,4 @@
+from numpy.dtypes import DateTime64DType
 import h5py
 import pytz
 import numpy as np
@@ -74,7 +75,6 @@ class Scan:
         with h5py.File(filepath, "r") as f:
             metaData: h5py.Dataset = f["scanMetaData"]
             date_str: str = hdf5_string_reader(metaData["Date"])
-            print(date_str)
             self.probe = Probe()
             date: datetime = datetime.strptime(
                 date_str if date_str else "1970-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"
@@ -95,8 +95,6 @@ class Scan:
             (data, time, timeIndices, probeTranslation, probeRotation) = (
                 consolidate_scan(f)
             )
-            # print(probeTranslation)
-            # print(probeRotation)
             self.sizeX: int = data.shape[0]
             self.sizeY: int = data.shape[1]
             self.sizeZ: int = data.shape[2]
@@ -109,6 +107,7 @@ class Scan:
             self.measuredTimes: list[float] = time.reshape(-1).tolist()
             self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
             self.voxels: np.ndarray = data
+            self.fill_default(f)
 
     def matchAcquisitionMode(self, acqMetaData: h5py.Dataset):
         _acquisitionMode = hdf5_string_reader(acqMetaData["acquisitionMode"])
@@ -141,6 +140,15 @@ class Scan:
                 self.probe.probeType = Probe.ProbeType.RCA
 
     def fill_default(self, f: h5py.Group):
+        self.dim6 = Dim6()
+        self.integrationWindowDuration = float(f["acqMetaData"]["voxDim"]["dt"][()][0][0])
+        self.dim6.dim6 = 1
+        clutDefault = Dim6.ClutterFiltering()
+        clutDefault.clutterFilter = Dim6.ClutterFiltering.clutterFilterType.StaticSVD
+        clutDefault.clutterFilterCutoffHigh = 0
+        clutDefault.clutterFilterCutoffLow = 0
+        clutDefault.clutterFilterWindowDuration = self.integrationWindowDuration
+        self.dim6.dim6element.add((Dim6.Dim6type.ClutterFiltering, clutDefault))
         self.depth = Depth()
         voxel2Probe = f["acqMetaData"]["voxelsToProbe"][:]
         self.depth.fill_default(voxel2Probe, self.sizeZ)
@@ -151,7 +159,7 @@ class Scan:
         dzIcoRange = np.fix(1e8 * 1540 * 1e-6/8.9290)
         dzIcoDeep = np.fix(1e8 * 1540 * 1e-6 / 6.25)
         myTolerance: float = 2
-        convertedDz = np.fix(f["acqMetaData"]["voxDim"]["dz"][()] * 1e8)
+        convertedDz = np.fix(f["acqMetaData"]["voxDim"]["dz"][()][0][0] * 1e8)
         if self.probe.probeType == Probe.ProbeType.MultiArray:
             self.probe.name = "IcoPrime 4D MultiArray"
         elif self.probe.probeType == Probe.ProbeType.RCA:
@@ -164,7 +172,7 @@ class Scan:
                 self.probe.name = "IcoRange"
             elif abs(convertedDz - dzIcoDeep) < myTolerance:
                self.probe.name = "IcoDeep"
-            elif abs(convertedDz - dzIcoBright) < myTolerance:
+            elif abs(convertedDz - dzRCA12) < myTolerance:
                 self.probe.name = "IcoBright"
             elif abs(convertedDz - dzIcoPrime) < myTolerance:
                 sizeX = f["acqMetaData"]["imgDim"]["sizeX"][()]
@@ -177,7 +185,6 @@ class Scan:
             else:
                 self.probe.name = "unknown"
         self.probe.fill_default()
-        self.integrationWindowDuration = f["acqMetaData"]["voxDim"]["dt"][()]
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
         self.planeWaveAngles = np.linspace(-10,2,10).tolist()
@@ -188,6 +195,36 @@ class Scan:
         self.isMultiplane = False
         self.delayAfterTrigger = 0
         self.sequenceName = "default sequence"
+
+        # Scan Meta Data
+        refDate = datetime(1970, 1, 1, 0, 0, 0, 0, pytz.utc)
+        self.gender = GenderType.Undefined
+        self.projectDescription = hdf5_string_reader(f["scanMetaData"]["Comment"])
+        self.species = 'Unknown'
+        self.transferDate = refDate
+        self.ageAtTransfer = 0
+        self.subjectDescription = 'none'
+        self.weightUnit = WeightUnitType.mg
+        self.weight = 0
+        self.treatment = ''
+        self.studyType = ''
+        self.taskName = ''
+        self.taskDescription = 'none'
+        self.stimulationToggleTimes = []
+        self.fillIcoScanVersion(hdf5_string_reader(f["scanMetaData"]["Neuroscan_version"]))
+
+
+    def fillIcoScanVersion(self, neuroscan: str):
+        if neuroscan.startswith('Conexus Software version V'):
+            major = int(neuroscan[-3])
+            minor = int(neuroscan[-1])
+            patch = 0
+        else:
+            major = int(neuroscan[-5])
+            minor = int(neuroscan[-3])
+            patch = int(neuroscan[-1])
+        self.icoScanVersion = IcoScanVersion(major, minor, patch)
+
 
     def load_scan_binary(self, filepath) -> None:
         with open(filepath, "rb") as f:
