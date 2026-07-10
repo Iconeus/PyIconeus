@@ -30,16 +30,22 @@ def check_fourCC(filepath, str_check) -> bool:
 def read_scan(filepath) -> Scan:
     return Scan(filepath, check_fourCC(filepath, SCAN_4CC_STR))
 
+
 def read_bri(filepath) -> Roi:
     return Roi(filepath, check_fourCC(filepath, ROI_4CC_STR))
+
 
 def read_bps(filepath: str) -> Bps:
     return Bps(filepath, check_fourCC(filepath, BPS_4CC_STR))
 
-def read_raw(filepath, fileheader, blockStart:int =1, blockEnd:int =1):
+
+def read_raw(filepath, fileheader, blockStart: int = 1, blockEnd: int = 1):
     return Raw(filepath, fileheader, blockStart, blockEnd)
 
-def dispatch_extension(filepath, fileheader, blockStart:int = 1, blockEnd: int = 1) -> Scan | Bps | Roi | None:
+
+def dispatch_extension(
+    filepath, fileheader, blockStart: int = 1, blockEnd: int = 1
+) -> Scan | Bps | Roi | None:
     if filepath.endswith(".scan"):
         return read_scan(filepath)
     elif filepath.endswith(".bps"):
@@ -52,7 +58,9 @@ def dispatch_extension(filepath, fileheader, blockStart:int = 1, blockEnd: int =
         return None
 
 
-def open_path(path: str, path2:str | None = None, blockStart:int = 1, blockEnd: int = 1) -> Union[Scan, Bps, None, FileNotFoundError]:
+def open_path(
+    path: str, path2: str | None = None, blockStart: int = 1, blockEnd: int = 1
+) -> Union[Scan, Bps, None, FileNotFoundError]:
     try:
         if not os.path.isfile(path):
             raise FileNotFoundError

@@ -85,7 +85,7 @@ class Scan:
             self.subjectTag = hdf5_string_reader(metaData["Subject_tag"])
             self.sessionTag = hdf5_string_reader(metaData["Session_tag"])
             type: str = hdf5_string_reader(metaData["Type"])
-            self.type = ScanType(0) if type == "source" else ScanType(1)
+            self.type = ScanType.Source if type == "source" else ScanType.Proc
             self.username = hdf5_string_reader(metaData["User_name"])
             self.projectDescription = hdf5_string_reader(metaData["Comment"])
             acqMetaData: h5py.Dataset = f["acqMetaData"]
@@ -125,7 +125,10 @@ class Scan:
                 self.acquisitionMode = AcquisitionMode._4DScan
                 if acqMetaData["imgDim"]["npose"][()] == 4:
                     self.probe.probeType = Probe.ProbeType.MultiArray
-                elif acqMetaData["imgDim"]["npose"][()] == 1 and acqMetaData["imgDim"]["sizeY"][()] == 4:
+                elif (
+                    acqMetaData["imgDim"]["npose"][()] == 1
+                    and acqMetaData["imgDim"]["sizeY"][()] == 4
+                ):
                     self.probe.probeType = Probe.ProbeType.MultiArray
                 else:
                     self.probe.probeType = Probe.ProbeType.Linear
@@ -141,25 +144,27 @@ class Scan:
 
     def fill_default(self, f: h5py.Group):
         self.dim6 = Dim6()
-        self.integrationWindowDuration = float(f["acqMetaData"]["voxDim"]["dt"][()][0][0])
-        self.dim6.dim6 = 1
+        self.integrationWindowDuration = float(
+            f["acqMetaData"]["voxDim"]["dt"][()][0][0]
+        )
+        self.dim6.count = 1
         clutDefault = Dim6.ClutterFiltering()
         clutDefault.clutterFilter = Dim6.ClutterFiltering.clutterFilterType.StaticSVD
         clutDefault.clutterFilterCutoffHigh = 0
         clutDefault.clutterFilterCutoffLow = 0
         clutDefault.clutterFilterWindowDuration = self.integrationWindowDuration
-        self.dim6.dim6element.add((Dim6.Dim6type.ClutterFiltering, clutDefault))
+        self.dim6.dim6element.add((Dim6.Dim6Intent.ClutterFiltering, clutDefault))
         self.depth = Depth()
         voxel2Probe = f["acqMetaData"]["voxelsToProbe"][:]
         self.depth.fill_default(voxel2Probe, self.sizeZ)
-        dzIcoBright = np.fix(1e8 * 1540*1e-6/12.5)
+        dzIcoBright = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
         dzRCA12 = dzIcoBright
-        dzIcoPrime = np.fix(1e8 * 1540 * 1e-6/15.625)
+        dzIcoPrime = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
         dzRCA15 = dzIcoPrime
-        dzIcoRange = np.fix(1e8 * 1540 * 1e-6/8.9290)
-        dzIcoDeep = np.fix(1e8 * 1540 * 1e-6 / 6.25)
+        dzIcoRange = np.trunc(1e8 * 1540 * 1e-6 / 8.9290)
+        dzIcoDeep = np.trunc(1e8 * 1540 * 1e-6 / 6.25)
         myTolerance: float = 2
-        convertedDz = np.fix(f["acqMetaData"]["voxDim"]["dz"][()][0][0] * 1e8)
+        convertedDz = np.trunc(f["acqMetaData"]["voxDim"]["dz"][()][0][0] * 1e8)
         if self.probe.probeType == Probe.ProbeType.MultiArray:
             self.probe.name = "IcoPrime 4D MultiArray"
         elif self.probe.probeType == Probe.ProbeType.RCA:
@@ -171,11 +176,11 @@ class Scan:
             if abs(convertedDz - dzIcoRange) < myTolerance:
                 self.probe.name = "IcoRange"
             elif abs(convertedDz - dzIcoDeep) < myTolerance:
-               self.probe.name = "IcoDeep"
+                self.probe.name = "IcoDeep"
             elif abs(convertedDz - dzRCA12) < myTolerance:
                 self.probe.name = "IcoBright"
             elif abs(convertedDz - dzIcoPrime) < myTolerance:
-                sizeX = f["acqMetaData"]["imgDim"]["sizeX"][()]
+                sizeX = f["acqMetaData"]["imgDim"]["sizeX"][()][0][0]
                 if sizeX == 128:
                     self.probe.name = "IcoPrime"
                 elif sizeX == 192:
@@ -187,7 +192,7 @@ class Scan:
         self.probe.fill_default()
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
-        self.planeWaveAngles = np.linspace(-10,2,10).tolist()
+        self.planeWaveAngles = np.linspace(-10, 2, 10).tolist()
         if self.probe.name == "IcoPrime 4D MultiArray":
             self.planeWaveAngles = np.linspace(-12, 12, 8).tolist()
         self.transmitVoltage = 25
@@ -200,31 +205,35 @@ class Scan:
         refDate = datetime(1970, 1, 1, 0, 0, 0, 0, pytz.utc)
         self.gender = GenderType.Undefined
         self.projectDescription = hdf5_string_reader(f["scanMetaData"]["Comment"])
-        self.species = 'Unknown'
+        self.species = "Unknown"
         self.transferDate = refDate
         self.ageAtTransfer = 0
-        self.subjectDescription = 'none'
+        self.subjectDescription = "none"
         self.weightUnit = WeightUnitType.mg
         self.weight = 0
-        self.treatment = ''
-        self.studyType = ''
-        self.taskName = ''
-        self.taskDescription = 'none'
+        self.treatment = ""
+        self.studyType = ""
+        self.taskName = ""
+        self.taskDescription = "none"
         self.stimulationToggleTimes = []
-        self.fillIcoScanVersion(hdf5_string_reader(f["scanMetaData"]["Neuroscan_version"]))
-
+        self.fillIcoScanVersion(
+            hdf5_string_reader(f["scanMetaData"]["Neuroscan_version"])
+        )
 
     def fillIcoScanVersion(self, neuroscan: str):
-        if neuroscan.startswith('Conexus Software version V'):
+        if neuroscan.startswith("Conexus Software version V"):
             major = int(neuroscan[-3])
             minor = int(neuroscan[-1])
             patch = 0
-        else:
+        elif neuroscan.startswith("IcoScan version"):
             major = int(neuroscan[-5])
             minor = int(neuroscan[-3])
             patch = int(neuroscan[-1])
+        else:
+            major = 1
+            minor = 0
+            patch = 0
         self.icoScanVersion = IcoScanVersion(major, minor, patch)
-
 
     def load_scan_binary(self, filepath) -> None:
         with open(filepath, "rb") as f:
@@ -319,11 +328,11 @@ class Scan:
                 * self.sizeZ
                 * self.nTime
                 * self.nPose
-                * self.dim6.dim6
+                * self.dim6.count
             )
             self.voxels = np.fromfile(f, dtype="d", count=dataSize)
             self.voxels = self.voxels.reshape(
-                (self.dim6.dim6, self.nTime, self.sizeZ, self.sizeY, self.sizeX),
+                (self.dim6.count, self.nTime, self.sizeZ, self.sizeY, self.sizeX),
                 order="C",
             )
 
@@ -405,7 +414,7 @@ class IcoScanVersion:
 
 
 class Dim6:
-    class Dim6type(IntEnum):
+    class Dim6Intent(IntEnum):
         ClutterFiltering = (0,)
         EnhancedDoppler = (1,)
         VelocityBandFiltering = (2,)
@@ -458,37 +467,37 @@ class Dim6:
             return f"\t\tVelocity Min: ${self.velocityMin}\n\t\tVelocity Max: ${self.velocityMax}\n"
 
     def __init__(self) -> None:
-        self.dim6: int
-        self.dim6element: set[tuple[Dim6.Dim6type, object]] = set()
+        self.count: int
+        self.dim6element: set[tuple[Dim6.Dim6Intent, object]] = set()
 
     def load_binary(self, f) -> None:
-        self.dim6 = unpack("@Q", f.read(8))[0]
+        self.count = unpack("@Q", f.read(8))[0]
         dim6intents: list[int] = []
-        for _ in range(self.dim6):
+        for _ in range(self.count):
             dim6intents.append(unpack("@L", f.read(4))[0])
         for intent in dim6intents:
             if (
-                intent == self.Dim6type.EnhancedDoppler
-                or intent == self.Dim6type.BrainMaskedDoppler
+                intent == self.Dim6Intent.EnhancedDoppler
+                or intent == self.Dim6Intent.BrainMaskedDoppler
             ):
                 f.seek(20, 1)
-            elif intent == self.Dim6type.ClutterFiltering:
+            elif intent == self.Dim6Intent.ClutterFiltering:
                 clutterFiltering = self.ClutterFiltering()
                 self.dim6element.add(
-                    (self.Dim6type.ClutterFiltering, clutterFiltering.load_binary(f))
+                    (self.Dim6Intent.ClutterFiltering, clutterFiltering.load_binary(f))
                 )
-            elif intent == self.Dim6type.VelocityBandFiltering:
+            elif intent == self.Dim6Intent.VelocityBandFiltering:
                 velocityBandWidth = self.VelocityBandwidthFiltering()
                 self.dim6element.add(
                     (
-                        self.Dim6type.VelocityBandFiltering,
+                        self.Dim6Intent.VelocityBandFiltering,
                         velocityBandWidth.load_binary(f),
                     )
                 )
 
     def __repr__(self): ...
     def __str__(self) -> str:
-        rep = f"{self.dim6}"
+        rep = f"{self.count}"
         for dimElement in self.dim6element:
             rep += f"\n\t{dimElement[0].name}: \n{dimElement[1]}"
         return rep
@@ -521,16 +530,22 @@ class Probe:
         self.probeNumberOfElements: float
         self.probeModel: str
 
-    def fill_default(self, ):
-        if self.name == "IcoPrime" or self.name == "unknown" or self.name == "IcoPrime 4D MultiArray":
+    def fill_default(
+        self,
+    ):
+        if (
+            self.name == "IcoPrime"
+            or self.name == "unknown"
+            or self.name == "IcoPrime 4D MultiArray"
+        ):
             self.probeCentralFrequency = 15.625
             self.probePitch = 0.11
             self.probeElevationAperture = 1.5
             self.probeNumberOfElements = 128
-            self.probeModel = '2392'
+            self.probeModel = "2392"
             if self.name == "IcoPrime 4D MultiArray":
                 self.probeNumberOfElements = 256
-                self.probeModel = '2390'
+                self.probeModel = "2390"
         self.probeRadiusOfCurvature = 0
 
     def load_binary(self, f) -> None:
@@ -574,16 +589,16 @@ class ProbeToLabElements:
 
     def setProbe2LabTransform(self, transform: np.ndarray) -> None:
         for t in transform:
-            self.matricesList.append(self.ProbeToLabMatrices(float(t[0]), float(t[1]), float(t[2])))
+            self.matricesList.append(
+                self.ProbeToLabMatrices(float(t[0]), float(t[1]), float(t[2]))
+            )
 
     def load_binary(self, f) -> None:
         for _ in range(self.matricesCount):
             x = unpack("@d", f.read(8))[0]
             y = unpack("@d", f.read(8))[0]
             z = unpack("@d", f.read(8))[0]
-            self.matricesList.append(
-                ProbeToLabElements.ProbeToLabMatrices(x, y, z)
-            )
+            self.matricesList.append(ProbeToLabElements.ProbeToLabMatrices(x, y, z))
 
     def __repr__(self): ...
     def __str__(self) -> str:
@@ -597,8 +612,8 @@ class Depth:
     def __init__(self) -> None:
         self.depthNear: float
         self.depthFar: float
-    
-    def fill_default(self, voxel2probe:np.ndarray, sizeZ: float):
+
+    def fill_default(self, voxel2probe: np.ndarray, sizeZ: float):
         tmp: np.ndarray = transform_points_forward(voxel2probe, np.array([1, 1, 1]))
         self.depthNear = float(abs(tmp[2]) * 1e3)
         tmp = transform_points_forward(voxel2probe, np.array([1, 1, sizeZ]))

@@ -46,6 +46,7 @@ def translationMatrix(dx, dy, dz) -> np.ndarray:
 def scaleMatrix(sx, sy, sz) -> np.ndarray:
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
 
+
 def decryptData(value, n: int) -> np.ndarray:
     if value.shape[0] == 1:
         nbrc: np.ndarray = np.asarray(value, dtype=float)[0]
@@ -79,6 +80,7 @@ def squeeze_trailing(arr: npt.NDArray, initial: int = 0) -> npt.NDArray:
 
     arr.reshape(new_shape)
     return arr
+
 
 def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDArray:
     """Applique une transformation affine à des points 3D.

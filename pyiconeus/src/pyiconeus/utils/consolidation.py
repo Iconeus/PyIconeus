@@ -331,12 +331,12 @@ def consolidate_scan(
             data, time, voxels2probe, probe2lab, timeOriginal
         )
 
-    qform: npt.NDArray = np.squeeze(probe2lab @ voxels2probe)
-
     data = _transform_data_7d_to_6d(data)
 
     if data.ndim < 5:
-        warnings.warn("Scan has only one probe pose.")
+        warnings.warn(
+            RuntimeWarning("consolidation warn", "Scan has only one probe pose.")
+        )
         return data, time, timeOriginal, probe2lab.T[3][:3], probe2lab.T[0]
 
     translations, rotations, _ = _deconvolve_probe_path(probe2lab)
@@ -344,7 +344,10 @@ def consolidate_scan(
     probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
     probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     for rotation_index, rotation in enumerate(rotations):
-        translation_same_rotation = probe2lab[rotation_index * len(rotations): rotation_index * len(rotations) + len(rotations)]
+        translation_same_rotation = probe2lab[
+            rotation_index * len(rotations) : rotation_index * len(rotations)
+            + len(rotations)
+        ]
         translation_same_rotation = np.array(
             [
                 np.mean(translation_same_rotation.T[3][0]),
@@ -354,7 +357,6 @@ def consolidate_scan(
         )
         probe2labTranslation[rotation_index] = translation_same_rotation
         probe2labRotation[rotation_index] = np.array([0.0, 0.0, np.radians(rotation)])
-    
 
     translation_steps: npt.NDArray = np.diff(translations)
     # Rounding is necessary to avoid numerical errors when computing the consolidated
@@ -378,11 +380,8 @@ def consolidate_scan(
             f"Poses are regularly spaced, but with interval {median_translation_step} "
             "meters: pose-wise affine transformations cannot be collapsed."
         )
-    # fulldata = cast(
-    #         tuple[int, int, int, int, int, int],
-    #         data.shape + (1,) * (6 - len(data.shape)),
-    #     )
     data = data[(slice(None),) * data.ndim + (None,) * (6 - data.ndim)]
+
     # can consider them as a single volume.
     data = np.transpose(data, axes=(0, 4, 1, 2, 3, 5))
     new_shape = (
@@ -407,31 +406,6 @@ def consolidate_scan(
     theoretical_time_indices: npt.NDArray = np.round(
         (timeOriginal - integrationTime) / dt
     )
-    # Rounding is necessary to avoid numerical errors when computing the
-    # consolidated affine.
-
-    # voxQform: npt.NDArray = qform if qform.ndim == 3 else qform[np.newaxis]
-
-    # voxdim: npt.NDArray = np.abs(decompose44(voxQform[0] if voxQform.ndim == 3 else voxQform)[2])
-
-    # voxdim: npt.NDArray = voxdim.round(decimals=6)
-
-    # consolidated_affines = {}
-    # for affines_type in ("qform", "sform"):
-    #     (
-    #         consolidated_affines[affines_type],
-    #         consolidated_affines[f"{affines_type}_code"],
-    #     ) = getattr(scan, f"get_{affines_type}")(coded=True)
-    #     consolidated_affines[affines_type] = consolidated_affines[affines_type][
-    #         pose_order[0]
-    #     ]
-
-    #     if consolidated_affines[f"{affines_type}_code"] != 0:
-    #         rescaling = np.eye(4)
-    #         rescaling[1, 1] = median_translation_step / voxdim[1]
-    #         consolidated_affines[affines_type] = (
-    #             consolidated_affines[affines_type] @ rescaling
-    #         )
 
     data = squeeze_trailing(data, initial=4)
 

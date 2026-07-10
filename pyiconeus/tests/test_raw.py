@@ -7,21 +7,43 @@ import numpy as np
 
 
 def test_read_raw():
-    raw = read_raw(testDataPath + "/TestULM2D_v2.raw", testDataPath + "/TestULM2D_v2.hraw")
+    raw = read_raw(
+        testDataPath + "/TestULM2D_v2.raw", testDataPath + "/TestULM2D_v2.hraw"
+    )
     assert raw is not None
 
+
 def test_raw_val():
-    raw = read_raw(testDataPath + "/TestULM2D_v2.raw", testDataPath + "/TestULM2D_v2.hraw")
+    raw = read_raw(
+        testDataPath + "/TestULM2D_v2.raw", testDataPath + "/TestULM2D_v2.hraw"
+    )
     metadata: Raw.MetaData = Raw.MetaData(testDataPath + "/TestULM2D_v2.hraw")
     metadata.transmitFrequency = float(decryptData(np.array([15775.125]), 1))
     metadata.prf = float(decryptData(np.array([22110072]), 2))
     metadata.speedOfSound = float(decryptData(np.array([4643172]), 3))
     metadata.frameRate = float(decryptData(np.array([4020072]), 4))
     metadata.receiveAperture = decryptData(np.array([5097, 643272]), 5)
-    metadata.flatAngles = decryptData(np.array([-70278, -56208, -42138, -28068, -13998, 72, 14142, 28212, 42282, 56352, 70422]), 7)
+    metadata.flatAngles = decryptData(
+        np.array(
+            [
+                -70278,
+                -56208,
+                -42138,
+                -28068,
+                -13998,
+                72,
+                14142,
+                28212,
+                42282,
+                56352,
+                70422,
+            ]
+        ),
+        7,
+    )
     metadata.blockDim = decryptData(np.array([1157832, 9117, 823167, 9117, 3618072]), 9)
     metadata.compound = bool(decryptData(np.array([10122]), 10))
-    metadata.numberOfBlock = int(decryptData(np.array([99567]),11))
+    metadata.numberOfBlock = int(decryptData(np.array([99567]), 11))
     metadata.acquisitionMode = "2Dscan"
     depthData = decryptData(np.array([6102, 60372]), 6)
     voxDimData = decryptData(np.array([956.4, 3288, 864.4223999999999]), 8)

@@ -32,7 +32,9 @@ class Roi:
 
                     # Triangles
                     indices_count: int = unpack("@L", f.read(4))[0]
-                    triangles: np.ndarray = np.ndarray(shape=(indices_count, 3), dtype=int)
+                    triangles: np.ndarray = np.ndarray(
+                        shape=(indices_count, 3), dtype=int
+                    )
                     for i in range(indices_count):
                         triangles[i][0] = unpack("@L", f.read(4))[0]
                         triangles[i][1] = unpack("@L", f.read(4))[0]
@@ -42,7 +44,7 @@ class Roi:
                         unpack("@f", f.read(4))[0],
                         unpack("@f", f.read(4))[0],
                     )
-                    label: str = read_string_binary(f, '@L', 4)
+                    label: str = read_string_binary(f, "@L", 4)
                     self.list.append(RoiElements(color, vertices, triangles, label))
         else:
             with h5py.File(filepath, "r") as f:
@@ -52,7 +54,7 @@ class Roi:
                     color: RoiColor = RoiColor(
                         roiElement["color"][0][0] / 256,
                         roiElement["color"][0][1] / 256,
-                        roiElement["color"][0][2] / 256
+                        roiElement["color"][0][2] / 256,
                     )
                     faces: np.ndarray = roiElement["faces"][:]
                     vertices: np.ndarray = roiElement["vertices"][:]
