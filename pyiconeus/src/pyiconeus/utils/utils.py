@@ -75,8 +75,9 @@ def squeeze_trailing(arr: npt.NDArray, initial: int = 0) -> npt.NDArray:
     """
     non_unitary_dims = (np.asarray(arr.shape) != 1).nonzero()[0]
     last_non_unitary_dim = non_unitary_dims[-1] if non_unitary_dims.size > 0 else 0
-    arr.shape = arr.shape[:initial] + arr.shape[initial : (last_non_unitary_dim + 1)]
+    new_shape = arr.shape[:initial] + arr.shape[initial : (last_non_unitary_dim + 1)]
 
+    arr.reshape(new_shape)
     return arr
 
 def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDArray:
