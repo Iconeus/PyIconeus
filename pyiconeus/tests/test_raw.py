@@ -1,6 +1,5 @@
 from pyiconeus.utils.utils import decryptData
 from pyiconeus.io.base import read_raw
-from tests.test_open import testDataPath
 from pyiconeus.models.Raw import Raw
 from pyiconeus.models.Scan import Depth, VoxDim
 import numpy as np
@@ -8,16 +7,16 @@ import numpy as np
 
 def test_read_raw():
     raw = read_raw(
-        testDataPath + "/TestULM2D_v2.raw", testDataPath + "/TestULM2D_v2.hraw"
+        "./tests/data" + "/TestULM2D_v2.raw", "./tests/data" + "/TestULM2D_v2.hraw"
     )
     assert raw is not None
 
 
 def test_raw_val():
     raw = read_raw(
-        testDataPath + "/TestULM2D_v2.raw", testDataPath + "/TestULM2D_v2.hraw"
+        "./tests/data" + "/TestULM2D_v2.raw", "./tests/data" + "/TestULM2D_v2.hraw"
     )
-    metadata: Raw.MetaData = Raw.MetaData(testDataPath + "/TestULM2D_v2.hraw")
+    metadata: Raw.MetaData = Raw.MetaData("./tests/data" + "/TestULM2D_v2.hraw")
     metadata.transmitFrequency = float(decryptData(np.array([15775.125]), 1))
     metadata.prf = float(decryptData(np.array([22110072]), 2))
     metadata.speedOfSound = float(decryptData(np.array([4643172]), 3))

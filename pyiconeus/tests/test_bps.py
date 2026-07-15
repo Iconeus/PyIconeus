@@ -1,33 +1,32 @@
 import numpy as np
-from tests.test_open import testDataPath
 from pyiconeus.models.Scan import Scan
 from pyiconeus.models.Bps import Bps
 from pyiconeus.io.base import read_bps
 
 
 def test_bps_load():
-    bps = read_bps(testDataPath + "/Mouse.bps")
+    bps = read_bps("./tests/data" + "/Mouse.bps")
     assert bps is not None
 
 
 def test_print_bps():
-    bps = read_bps(testDataPath + "/Mouse.bps")
+    bps = read_bps("./tests/data" + "/Mouse.bps")
     # Add --capture=no stdout to see BPS
     assert bps is not None
 
 
 def test_assign_bps():
     scan: Scan = Scan(
-        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
+        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
     )
-    bps: Bps = read_bps(testDataPath + "/Mouse.bps")
+    bps: Bps = read_bps("./tests/data" + "/Mouse.bps")
     scan.bps = bps
     assert scan.bps is not None
 
 
 def test_load_bps_v2():
     bps = read_bps(
-        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
+        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
     )
     assert bps is not None
 
@@ -57,7 +56,7 @@ def test_bps_v2_data():
         ]
     )
     bps: Bps = read_bps(
-        testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
+        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
     )
     print("data: ")
     print(data_true)
