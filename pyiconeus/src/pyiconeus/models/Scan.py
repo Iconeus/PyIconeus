@@ -89,9 +89,9 @@ class Scan:
             self.projectDescription = hdf5_string_reader(metaData["Comment"])
             acqMetaData: h5py.Dataset = f["acqMetaData"]
             self.matchAcquisitionMode(acqMetaData)
-            self.voxDim = VoxDim()
-            self.voxDim.load_hdf5(acqMetaData["voxDim"])
-            (data, time, timeIndices, probeTranslation, probeRotation) = (
+            tmp = np.sort(acqMetaData["timeOriginal"][:], axis=0)
+            dt = float(tmp[1][0] - tmp[0][0])
+            (data, time, timeIndices, probeTranslation, probeRotation, dy) = (
                 consolidate_scan(f)
             )
             self.sizeX: int = data.shape[0]
@@ -106,6 +106,9 @@ class Scan:
             self.measuredTimes: list[float] = time.reshape(-1).tolist()
             self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
             self.voxels: np.ndarray = data
+            self.integrationWindowDuration = float(acqMetaData["voxDim"]["dt"][0][0])
+            self.voxDim = VoxDim()
+            self.voxDim.load_hdf5(acqMetaData["voxDim"], dt, dy)
             self.fill_default(f)
 
     def matchAcquisitionMode(self, acqMetaData: h5py.Dataset):
@@ -143,7 +146,6 @@ class Scan:
 
     def fill_default(self, f: h5py.Group):
         self.dim6 = Dim6()
-        self.integrationWindowDuration = float(self.voxDim.dt)
         self.dim6.count = 1
         clutDefault = Dim6.ClutterFiltering()
         clutDefault.clutterFilter = Dim6.ClutterFiltering.clutterFilterType.StaticSVD
@@ -378,11 +380,14 @@ class VoxDim:
         self.dr: float = dr
         self.dtheta: float = dtheta
 
-    def load_hdf5(self, voxDimData: h5py.Dataset) -> None:
-        self.dx: float = voxDimData["dx"][0][0]
-        self.dy: float = voxDimData["dy"][0][0]
-        self.dz: float = voxDimData["dz"][0][0]
-        self.dt: float = voxDimData["dt"][0][0]
+    def load_hdf5(self, voxDimData: h5py.Dataset, dt: float, dy: float | None) -> None:
+        self.dx: float = float(voxDimData["dx"][0][0])
+        if dy is None:
+            self.dy: float = float(voxDimData["dy"][0][0])
+        else:
+            self.dy = dy
+        self.dz: float = float(voxDimData["dz"][0][0])
+        self.dt = dt
 
     def load_binary(self, f) -> None:
         self.dx = unpack("@d", f.read(8))[0]

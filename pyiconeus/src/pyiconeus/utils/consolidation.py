@@ -258,7 +258,7 @@ def _deconvolve_probe_path(
 
 def consolidate_scan(
     dataset: h5py.Group, copy: bool = True
-) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
+) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, float | None]:
     """Consolidate a scan acquired using regular probe poses.
 
     Using linear or multi-array probes, whole volumes are generally acquired
@@ -339,11 +339,11 @@ def consolidate_scan(
         warnings.warn(
             RuntimeWarning("consolidation warn", "Scan has only one probe pose.")
         )
-        return data, time, timeOriginal, np.array([probe2lab.T[3][:3]]), np.array([mat2euler(probe2lab)])
+        return data, time, timeOriginal, np.array([probe2lab.T[3][:3]]), np.array([mat2euler(probe2lab)]), None
     
     translations, rotations, _ = _deconvolve_probe_path(probe2lab)
 
-    
+    voxDimDy = float(np.mean(np.diff(translations)))
     probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
     probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     for rotation_index, rotation in enumerate(rotations):
@@ -412,4 +412,4 @@ def consolidate_scan(
 
     data = squeeze_trailing(data, initial=4)
 
-    return data, time, theoretical_time_indices, probe2labTranslation, probe2labRotation
+    return data, time, theoretical_time_indices, probe2labTranslation, probe2labRotation, voxDimDy
