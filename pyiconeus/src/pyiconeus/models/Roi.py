@@ -40,9 +40,9 @@ class Roi:
                         triangles[i][1] = unpack("@L", f.read(4))[0]
                         triangles[i][2] = unpack("@L", f.read(4))[0]
                     color: RoiColor = RoiColor(
-                        unpack("@f", f.read(4))[0],
-                        unpack("@f", f.read(4))[0],
-                        unpack("@f", f.read(4))[0],
+                        float(unpack("@f", f.read(4))[0]),
+                        float(unpack("@f", f.read(4))[0]),
+                        float(unpack("@f", f.read(4))[0]),
                     )
                     label: str = read_string_binary(f, "@L", 4)
                     self.list.append(RoiElements(color, vertices, triangles, label))
@@ -52,9 +52,9 @@ class Roi:
                     roiElement: h5py.Dataset = f["ROI"][roiElementName]
                     name: str = hdf5_string_reader(roiElement["label"])
                     color: RoiColor = RoiColor(
-                        roiElement["color"][0][0] / 256,
-                        roiElement["color"][0][1] / 256,
-                        roiElement["color"][0][2] / 256,
+                        float(roiElement["color"][0][0]) / 256,
+                        float(roiElement["color"][0][1]) / 256,
+                        float(roiElement["color"][0][2]) / 256,
                     )
                     faces: np.ndarray = roiElement["faces"][:]
                     vertices: np.ndarray = roiElement["vertices"][:]
@@ -74,9 +74,10 @@ class RoiColor:
         self.g: float = g
         self.b: float = b
 
-    def __repr__(self): ...
-    def __str__(self):
+    def __str__(self) -> str:
         return f"R: {self.r}, G: {self.g}, B: {self.b}"
+
+    __repr__ = __str__
 
 
 class RoiElements:

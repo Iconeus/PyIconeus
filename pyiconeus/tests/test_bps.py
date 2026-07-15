@@ -19,8 +19,8 @@ def test_print_bps():
 def test_assign_bps():
     scan: Scan = Scan(
         testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
-    )  # ty:ignore[invalid-assignment]
-    bps: Bps = read_bps(testDataPath + "/Mouse.bps")  # ty:ignore[invalid-assignment]
+    )
+    bps: Bps = read_bps(testDataPath + "/Mouse.bps")
     scan.bps = bps
     assert scan.bps is not None
 
@@ -58,7 +58,7 @@ def test_bps_v2_data():
     )
     bps: Bps = read_bps(
         testDataPath + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
-    )  # ty:ignore[invalid-assignment]
+    )
     print("data: ")
     print(data_true)
     print("bps data: ")

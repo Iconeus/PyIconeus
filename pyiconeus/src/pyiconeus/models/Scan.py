@@ -1,4 +1,3 @@
-from numpy.dtypes import DateTime64DType
 import h5py
 import pytz
 import numpy as np
@@ -63,7 +62,7 @@ class Scan:
         self.acquisitionDate: datetime
         self.type: ScanType
         self.stimulationToggleTimes: list[float] = []
-        self.icoScanVersion: IcoScanVersion
+        self.icoScanVersion: IcoScanVersion | None
         self.voxels: np.ndarray
         self.bps: Bps
         if is_binary:
@@ -144,9 +143,7 @@ class Scan:
 
     def fill_default(self, f: h5py.Group):
         self.dim6 = Dim6()
-        self.integrationWindowDuration = float(
-            f["acqMetaData"]["voxDim"]["dt"][()][0][0]
-        )
+        self.integrationWindowDuration = float(self.voxDim.dt)
         self.dim6.count = 1
         clutDefault = Dim6.ClutterFiltering()
         clutDefault.clutterFilter = Dim6.ClutterFiltering.clutterFilterType.StaticSVD
@@ -157,18 +154,18 @@ class Scan:
         self.depth = Depth()
         voxel2Probe = f["acqMetaData"]["voxelsToProbe"][:]
         self.depth.fill_default(voxel2Probe, self.sizeZ)
-        dzIcoBright = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
-        dzRCA12 = dzIcoBright
+        dzIcoBright = np.trunc(
+            1e8 * 1540 * 1e-6 / 12.5
+        )  # Mean speed of sound propagation in soft tissus by the probe frequency
         dzIcoPrime = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
-        dzRCA15 = dzIcoPrime
         dzIcoRange = np.trunc(1e8 * 1540 * 1e-6 / 8.9290)
         dzIcoDeep = np.trunc(1e8 * 1540 * 1e-6 / 6.25)
         myTolerance: float = 2
-        convertedDz = np.trunc(f["acqMetaData"]["voxDim"]["dz"][()][0][0] * 1e8)
+        convertedDz = np.trunc(self.voxDim.dz * 1e8)
         if self.probe.probeType == Probe.ProbeType.MultiArray:
             self.probe.name = "IcoPrime 4D MultiArray"
         elif self.probe.probeType == Probe.ProbeType.RCA:
-            if abs(convertedDz - dzRCA15) < myTolerance:
+            if abs(convertedDz - dzIcoPrime) < myTolerance:
                 self.probe.name = "IcoPrime 4D RCA"
             else:
                 self.probe.name = "IcoBright 4D RCA"
@@ -177,13 +174,12 @@ class Scan:
                 self.probe.name = "IcoRange"
             elif abs(convertedDz - dzIcoDeep) < myTolerance:
                 self.probe.name = "IcoDeep"
-            elif abs(convertedDz - dzRCA12) < myTolerance:
+            elif abs(convertedDz - dzIcoBright) < myTolerance:
                 self.probe.name = "IcoBright"
             elif abs(convertedDz - dzIcoPrime) < myTolerance:
-                sizeX = f["acqMetaData"]["imgDim"]["sizeX"][()][0][0]
-                if sizeX == 128:
+                if self.sizeX == 128:
                     self.probe.name = "IcoPrime"
-                elif sizeX == 192:
+                elif self.sizeX == 192:
                     self.probe.name = "IcoPrimeXL"
                 else:
                     self.probe.name = "IcoPrimeMini"
@@ -192,11 +188,11 @@ class Scan:
         self.probe.fill_default()
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
-        self.planeWaveAngles = np.linspace(-10, 2, 10).tolist()
+        self.planeWaveAngles: np.ndarray = np.linspace(-10, 2, 10).tolist()
         if self.probe.name == "IcoPrime 4D MultiArray":
-            self.planeWaveAngles = np.linspace(-12, 12, 8).tolist()
+            self.planeWaveAngles: np.ndarray = np.linspace(-12, 12, 8).tolist()
         self.transmitVoltage = 25
-        self.pulseRepetitionFrequency = len(self.planeWaveAngles) * 500
+        self.pulseRepetitionFrequency: int = len(self.planeWaveAngles) * 500
         self.isMultiplane = False
         self.delayAfterTrigger = 0
         self.sequenceName = "default sequence"
@@ -230,9 +226,8 @@ class Scan:
             minor = int(neuroscan[-3])
             patch = int(neuroscan[-1])
         else:
-            major = 1
-            minor = 0
-            patch = 0
+            self.icoScanVersion = None
+            return
         self.icoScanVersion = IcoScanVersion(major, minor, patch)
 
     def load_scan_binary(self, filepath) -> None:
@@ -384,10 +379,10 @@ class VoxDim:
         self.dtheta: float = dtheta
 
     def load_hdf5(self, voxDimData: h5py.Dataset) -> None:
-        self.dx: float = voxDimData["dx"][0]
-        self.dy: float = voxDimData["dy"][0]
-        self.dz: float = voxDimData["dz"][0]
-        self.dt: float = voxDimData["dt"][0]
+        self.dx: float = voxDimData["dx"][0][0]
+        self.dy: float = voxDimData["dy"][0][0]
+        self.dz: float = voxDimData["dz"][0][0]
+        self.dt: float = voxDimData["dt"][0][0]
 
     def load_binary(self, f) -> None:
         self.dx = unpack("@d", f.read(8))[0]

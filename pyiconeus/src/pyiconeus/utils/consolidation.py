@@ -215,6 +215,7 @@ def _deconvolve_probe_path(
         Array of center coordinates :math:`(x, y, z)`.
     """
     # Transformation center is defined as the "average" translation.
+
     center = tforms[:, :3, 3].sum(axis=0) / tforms.shape[0]
     translation_to_center_tform = np.eye(4)
     translation_to_center_tform[:3, 3] = center
@@ -305,7 +306,7 @@ def consolidate_scan(
         time = time[:, 0]
 
     timeOriginalRaw: npt.NDArray = smeta["timeOriginal"][()]
-    integrationTime: float = smeta["voxDim"]["dt"][()]  # ty:ignore[invalid-assignment]
+    integrationTime: float = smeta["voxDim"]["dt"][()][0][0]  # ty:ignore[invalid-assignment]
 
     sorted_time_original: npt.NDArray = np.sort(timeOriginalRaw, axis=None)
     dt: float = (
@@ -319,8 +320,6 @@ def consolidate_scan(
         timeOriginal = timeOriginal[:, 0]
 
     probe2lab: npt.NDArray = smeta["probeToLab"][()]
-    print("probe2lab ")
-    print(probe2lab)
     voxels2probe: npt.NDArray = smeta["voxelsToProbe"][()]
 
     voxels2probe: npt.NDArray = _fix_voxels2probe(voxels2probe, data.shape[2])
@@ -333,14 +332,18 @@ def consolidate_scan(
 
     data = _transform_data_7d_to_6d(data)
 
+    
+
+
     if data.ndim < 5:
         warnings.warn(
             RuntimeWarning("consolidation warn", "Scan has only one probe pose.")
         )
-        return data, time, timeOriginal, probe2lab.T[3][:3], probe2lab.T[0]
-
+        return data, time, timeOriginal, np.array([probe2lab.T[3][:3]]), np.array([mat2euler(probe2lab)])
+    
     translations, rotations, _ = _deconvolve_probe_path(probe2lab)
 
+    
     probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
     probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     for rotation_index, rotation in enumerate(rotations):
