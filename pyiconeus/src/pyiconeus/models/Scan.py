@@ -99,6 +99,8 @@ class Scan:
             self.sizeZ: int = data.shape[2]
             self.nTime: int = data.shape[3]
             self.nPose: int | Literal[1] = data.shape[4] if data.ndim > 4 else 1
+            if data.ndim < 6:
+                data = data.reshape((self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1))
             self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
             self.probeToLabsTranslations.setProbe2LabTransform(probeTranslation)
             self.probeToLabsRotations = ProbeToLabElements(self.nPose)
@@ -329,8 +331,8 @@ class Scan:
             )
             self.voxels = np.fromfile(f, dtype="d", count=dataSize)
             self.voxels = self.voxels.reshape(
-                (self.dim6.count, self.nTime, self.sizeZ, self.sizeY, self.sizeX),
-                order="C",
+                (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, self.dim6.count),
+                order='F' # Reshape in Fortran-like order, since MATLAB uses the same order
             )
 
     def get_VoxelToProbe(self) -> np.ndarray:

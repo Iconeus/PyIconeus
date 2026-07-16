@@ -294,7 +294,7 @@ def consolidate_scan(
         The consolidated scan.
     """
 
-    data: npt.NDArray = np.flip(dataset["Data"][:].T, axis=2)
+    data: npt.NDArray = dataset["Data"][:].T
 
     n_poses: int = data.shape[4] if len(data.shape) > 4 else 1
 
