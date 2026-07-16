@@ -60,12 +60,14 @@ class Roi:
                     vertices: np.ndarray = roiElement["vertices"][:]
                     self.list.append(RoiElements(color, vertices, faces, name))
 
-    def __repr__(self): ...
     def __str__(self):
         ret: str = f"Roi: {len(self.list)}\n"
         for roiElement in self.list:
             ret += f"{roiElement}"
         return ret
+
+    __repr__ = __str__
+    
 
 
 class RoiColor:
@@ -89,6 +91,7 @@ class RoiElements:
         self.faces: np.ndarray = faces
         self.color: RoiColor = color
 
-    def __repr__(self): ...
     def __str__(self):
         return f"{self.name}:\n\tColor: {self.color}\n\tVertices Count: {len(self.vertices)}\n\tFaces count: {len(self.faces)}\n"
+
+    __repr__ = __str__

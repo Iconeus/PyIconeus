@@ -346,7 +346,6 @@ class Scan:
         )
         return move_probe_up @ scale_to_metric @ center_probe @ shift_voxel
 
-    def __repr__(self): ...
     def __str__(self) -> str:
         rep = (
             f"sizeX: {self.sizeX}\nsizeY: {self.sizeY}\nsizeZ: {self.sizeZ}\nnTime: {self.nTime}\nnPose: {self.nPose}"
@@ -370,6 +369,7 @@ class Scan:
         )
         return rep
 
+    __repr__ = __str__
 
 class VoxDim:
     def __init__(self, dx=0, dy=0, dz=0, dt=0, dr=0, dtheta=0) -> None:
@@ -397,10 +397,10 @@ class VoxDim:
         self.dr = unpack("@d", f.read(8))[0]
         self.dtheta = unpack("@d", f.read(8))[0]
 
-    def __repr__(self): ...
     def __str__(self) -> str:
         return f"\n\tdx: {self.dx}\n\tdy: {self.dy}\n\tdz: {self.dz}\n\tdt: {self.dt}\n\tdr: {self.dr}\n\tdtheta: {self.dtheta}\n"
 
+    __repr__ = __str__
 
 class IcoScanVersion:
     def __init__(self, major: int, minor: int, patch: int) -> None:
@@ -408,10 +408,10 @@ class IcoScanVersion:
         self.minor = minor
         self.patch = patch
 
-    def __repr__(self): ...
     def __str__(self) -> str:
         return f"{self.major}.{self.minor}.{self.patch}\n\tmajor: {self.major}\n\tminor: {self.minor}\n\tpatch: {self.patch}"
 
+    __repr__ = __str__
 
 class Dim6:
     class Dim6Intent(IntEnum):
@@ -445,13 +445,15 @@ class Dim6:
                 self.clutterFilterCutoffLow = unpack("@f", f.read(4))[0]
                 self.clutterFilterCutoffHigh = unpack("@f", f.read(4))[0]
 
-        def __repr__(self): ...
         def __str__(self) -> str:
             return (
                 f"\t\tClutter Filtering Type: {self.clutterFilter.name}\n\t\tWindow Duration: {self.clutterFilterWindowDuration}"
                 f"\n\t\tCutoff Low: {self.clutterFilterCutoffLow}\n\t\tCutoff High: {self.clutterFilterCutoffHigh}\n"
             )
 
+        __repr__ = __str__
+
+        
     class VelocityBandwidthFiltering:
         def __init__(self) -> None:
             self.velocityMin: float
@@ -462,9 +464,10 @@ class Dim6:
             self.velocityMax = unpack("@f", f.read(4))[0]
             f.seek(12, 1)
 
-        def __repr__(self): ...
         def __str__(self) -> str:
             return f"\t\tVelocity Min: ${self.velocityMin}\n\t\tVelocity Max: ${self.velocityMax}\n"
+
+        __repr__ = __str__
 
     def __init__(self) -> None:
         self.count: int
@@ -495,13 +498,13 @@ class Dim6:
                     )
                 )
 
-    def __repr__(self): ...
     def __str__(self) -> str:
         rep = f"{self.count}"
         for dimElement in self.dim6element:
             rep += f"\n\t{dimElement[0].name}: \n{dimElement[1]}"
         return rep
 
+    __repr__ = __str__
 
 class AcquisitionMode(IntEnum):
     _2DScan = 0
@@ -559,7 +562,6 @@ class Probe:
         self.probeModel = read_string_binary(f, "@H", 2)
         self.name = read_string_binary(f, "@H", 2)
 
-    def __repr__(self): ...
     def __str__(self) -> str:
         return (
             f"{self.name}\n\tprobeType: {self.probeType.name}\n\t"
@@ -571,6 +573,7 @@ class Probe:
             f"probeModel: {self.probeModel}"
         )
 
+    __repr__ = __str__
 
 class ProbeToLabElements:
     class ProbeToLabMatrices:
@@ -579,9 +582,10 @@ class ProbeToLabElements:
             self.y = y
             self.z = z
 
-        def __repr__(self): ...
         def __str__(self) -> str:
             return f"\n\t\tx: {self.x}\n\t\ty: {self.y}\n\t\tz: {self.z}"
+
+        __repr__ = __str__
 
     def __init__(self, matricesCount) -> None:
         self.matricesCount: int = matricesCount
@@ -600,13 +604,13 @@ class ProbeToLabElements:
             z = unpack("@d", f.read(8))[0]
             self.matricesList.append(ProbeToLabElements.ProbeToLabMatrices(x, y, z))
 
-    def __repr__(self): ...
     def __str__(self) -> str:
         rep = f"{self.matricesCount}"
         for i in range(len(self.matricesList)):
             rep += f"\n\t{i}: {self.matricesList[i]}"
         return rep
 
+    __repr__ = __str__
 
 class Depth:
     def __init__(self) -> None:
@@ -619,10 +623,10 @@ class Depth:
         tmp = transform_points_forward(voxel2probe, np.array([1, 1, sizeZ]))
         self.depthFar = float(abs(tmp[2]) * 1e3)
 
-    def __repr__(self): ...
     def __str__(self) -> str:
         return f"\n\tnear: {self.depthNear}\n\tfar: {self.depthFar}"
 
+    __repr__ = __str__
 
 class GenderType(IntEnum):
     Undefined = 0

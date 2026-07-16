@@ -44,7 +44,7 @@ def test_fourCC_Non_Unicode():
 
 def test_fourCC_unreadable_file():
     with pytest.raises(OSError) as exception:
-        check_fourCC("./tests/data", "scan")
+        check_fourCC("./tests/data", "scan") # Read directory
     assert exception is not None
 
 

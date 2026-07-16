@@ -58,6 +58,3 @@ def test_open_all():
             icoFile = open_path("./tests/data" + "/" + filename)
         print(filename)
         assert icoFile is not None
-
-# if __name__ == '__main__':
-#     test_open_all()

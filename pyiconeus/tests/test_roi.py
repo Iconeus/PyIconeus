@@ -40,6 +40,3 @@ def test_roi_values():
     assert color.b == float(113 / 256)
     assert roi_test.list[1].faces.shape == np.ndarray(shape=(10000, 3)).shape
     assert roi_test.list[1].vertices.shape == np.ndarray(shape=(4991, 3)).shape
-
-if __name__ == '__main__':
-    test_roi_values()
