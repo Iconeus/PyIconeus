@@ -52,9 +52,9 @@ class Roi:
                     roiElement: h5py.Dataset = f["ROI"][roiElementName]
                     name: str = hdf5_string_reader(roiElement["label"])
                     color: RoiColor = RoiColor(
-                        float(roiElement["color"][0][0]) / 256,
-                        float(roiElement["color"][0][1]) / 256,
-                        float(roiElement["color"][0][2]) / 256,
+                        float(roiElement["color"][0][0]) / 255,
+                        float(roiElement["color"][0][1]) / 255,
+                        float(roiElement["color"][0][2]) / 255,
                     )
                     faces: np.ndarray = roiElement["faces"][:]
                     vertices: np.ndarray = roiElement["vertices"][:]

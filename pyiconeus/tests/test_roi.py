@@ -28,15 +28,15 @@ def test_roi_values():
     roi_test: Roi = read_bri("./tests/data" + "/Cortex.bri")
     assert roi_test.list[0].name == "Isocortex (L)"
     color: RoiColor =  roi_test.list[0].color
-    assert color.r == float(112 / 256)
-    assert color.g == float(255 / 256)
-    assert color.b == float(113 / 256)
+    assert color.r == float(112 / 255)
+    assert color.g == float(255 / 255)
+    assert color.b == float(113 / 255)
     assert roi_test.list[0].faces.shape == np.ndarray(shape=(10000, 3)).shape
     assert roi_test.list[0].vertices.shape == np.ndarray(shape=(4991, 3)).shape
     assert roi_test.list[1].name == "Isocortex (R)"
     color: RoiColor =  roi_test.list[0].color
-    assert color.r == float(112 / 256)
-    assert color.g == float(255 / 256)
-    assert color.b == float(113 / 256)
+    assert color.r == float(112 / 255)
+    assert color.g == float(255 / 255)
+    assert color.b == float(113 / 255)
     assert roi_test.list[1].faces.shape == np.ndarray(shape=(10000, 3)).shape
     assert roi_test.list[1].vertices.shape == np.ndarray(shape=(4991, 3)).shape
