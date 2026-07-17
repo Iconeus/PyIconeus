@@ -57,6 +57,7 @@ class Roi:
                         float(roiElement["color"][0][2]) / 255,
                     )
                     faces: np.ndarray = roiElement["faces"][:]
+                    faces = faces - 1 #Fix the MATLAB 1-indexing
                     vertices: np.ndarray = roiElement["vertices"][:]
                     self.list.append(RoiElements(color, vertices, faces, name))
 
