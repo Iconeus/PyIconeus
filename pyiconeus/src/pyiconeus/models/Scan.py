@@ -12,6 +12,7 @@ from ..utils.utils import (
     hdf5_string_reader,
     transform_points_forward,
     rotation_xyz,
+    inverse_rotation_xyz,
 )
 from ..utils.consolidation import consolidate_scan
 
@@ -92,23 +93,50 @@ class Scan:
             self.matchAcquisitionMode(acqMetaData)
             tmp = np.sort(acqMetaData["timeOriginal"][:], axis=0)
             dt = float(tmp[1][0] - tmp[0][0])
-            (data, time, timeIndices, probeTranslation, probeRotation, dy) = (
-                consolidate_scan(f)
-            )
-            self.sizeX: int = data.shape[0]
-            self.sizeY: int = data.shape[1]
-            self.sizeZ: int = data.shape[2]
-            self.nTime: int = data.shape[3]
-            self.nPose: int | Literal[1] = data.shape[4] if data.ndim > 4 else 1
-            if data.ndim < 6:
-                data = data.reshape((self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1))
-            self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
-            self.probeToLabsTranslations.setProbe2LabTransform(probeTranslation)
-            self.probeToLabsRotations = ProbeToLabElements(self.nPose)
-            self.probeToLabsRotations.setProbe2LabTransform(probeRotation)
-            self.measuredTimes: list[float] = time.reshape(-1).tolist()
-            self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
-            self.voxels: np.ndarray = data
+            dy = float(acqMetaData["voxDim"]["dy"][0][0])
+            if not self.canBeConsolidated(f):
+                self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
+                timeOriginal = acqMetaData["timeOriginal"][:]
+                self.theoricalTimeIndices = np.round((timeOriginal - dt) / dt)
+                probeToLabs = acqMetaData["probeToLab"][:]
+                self.probeToLabsTranslations = ProbeToLabElements(len(probeToLabs))
+                self.probeToLabsRotations = ProbeToLabElements(len(probeToLabs))
+                translations = np.ndarray(shape=(len(probeToLabs), 3))
+                rotations = np.ndarray(shape=(len(probeToLabs), 3))
+                for i in range(len(probeToLabs)):
+                    tform = probeToLabs[i]
+                    tr = np.copy(tform.T[3][0:3])
+                    tform.T[3][0:3] = 0
+                    eul = inverse_rotation_xyz(tform)
+                    translations[i] = tr
+                    rotations[i] = eul
+                    self.probeToLabsTranslations.setProbe2LabTransform(translations)
+                    self.probeToLabsRotations.setProbe2LabTransform(rotations)
+                self.sizeX: int = self.voxels.shape[0]
+                self.sizeY: int = self.voxels.shape[1]
+                self.sizeZ: int = self.voxels.shape[2]
+                self.nTime: int = self.voxels.shape[3]
+                self.nPose: int | Literal[1] = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
+                if self.voxels.ndim < 6:
+                    self.voxels = self.voxels.reshape((self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1))
+            else:
+                (data, time, timeIndices, probeTranslation, probeRotation, dy) = (
+                    consolidate_scan(f)
+                )
+                self.sizeX: int = data.shape[0]
+                self.sizeY: int = data.shape[1]
+                self.sizeZ: int = data.shape[2]
+                self.nTime: int = data.shape[3]
+                self.nPose: int | Literal[1] = data.shape[4] if data.ndim > 4 else 1
+                if data.ndim < 6:
+                    data = data.reshape((self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1))
+                self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
+                self.probeToLabsTranslations.setProbe2LabTransform(probeTranslation)
+                self.probeToLabsRotations = ProbeToLabElements(self.nPose)
+                self.probeToLabsRotations.setProbe2LabTransform(probeRotation)
+                self.measuredTimes: list[float] = time.reshape(-1).tolist()
+                self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
+                self.voxels: np.ndarray = data
             self.integrationWindowDuration = float(acqMetaData["voxDim"]["dt"][0][0])
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"], dt, dy)
@@ -234,6 +262,20 @@ class Scan:
             self.icoScanVersion = None
             return
         self.icoScanVersion = IcoScanVersion(major, minor, patch)
+
+
+    def canBeConsolidated(self, hdf5_data: h5py.Dataset):
+        if self.acquisitionMode == AcquisitionMode._4DScanCustom:
+            data: np.ndarray = hdf5_data["Data"][:].T
+            data = np.transpose(data, axes=(0, 1, 2, 5, 4, 3))
+            blockRepeat: int = int(hdf5_data["acqMetaData"]["imgDim"]["nscanRepeat"][()][0][0])
+            nPose: int = int(hdf5_data["acqMetaData"]["imgDim"]["npose"][()][0][0])
+            time = hdf5_data["acqMetaData"]["time"][:]
+            self.measuredTimes = np.reshape(time, (nPose, blockRepeat))
+            self.probe.probeType = Probe.ProbeType.Linear
+            self.voxels = data
+            return False
+        return True
 
     def load_scan_binary(self, filepath) -> None:
         with open(filepath, "rb") as f:

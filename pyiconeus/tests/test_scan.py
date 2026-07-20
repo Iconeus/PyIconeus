@@ -132,6 +132,14 @@ def test_compare_acqMetaData():
     assert scanv1.integrationWindowDuration == scanv2.integrationWindowDuration
     assert scanv1.voxels.shape == np.ndarray(shape=(105, 16, 87, 325, 1, 1)).shape
 
+def test_4DCustomScan():
+    scan: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.scan", False)
+    assert scan is not None
+    assert scan.probeToLabsTranslations.matricesCount == 3
+    assert scan.sizeX == 128
+    assert scan.nTime == 572
+    assert scan.nPose == 3
+
 
 def test_scan_tomo():
     scan: Scan = Scan("./tests/data" + "/Tomographie_Compound.scan", False)

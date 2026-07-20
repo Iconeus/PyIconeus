@@ -48,9 +48,11 @@ def test_open_all():
 
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
+        if filename == "020222_M297_SHAM_4DfUS1.scan":
+            icoFile = open_path("./tests/data" + "/" + filename)
         if filename == "empty.scan":
             continue
-        if filename.endswith(".hraw"):
+        elif filename.endswith(".hraw"):
             icoFile = open_path("./tests/data" + "/" + filename.split('.')[0] + ".raw", "./tests/data" + "/" + filename)
         elif filename.endswith(".raw"):
             icoFile = open_path("./tests/data" + "/" + filename, "./tests/data" + "/" + filename.split('.')[0] + ".hraw")

@@ -1,7 +1,6 @@
 import struct
 import numpy as np
 import numpy.typing as npt
-from math import *
 import h5py
 
 encoding = "utf-8"
@@ -113,3 +112,24 @@ def rotation_xyz( theta ):
         [  -sy,             cy*sx,            cx*cy, 0],
         [    0,                 0,                0, 1]
     ],dtype=float)
+
+
+def inverse_rotation_xyz( M ):
+    if np.abs(M[2,0]) > 1.0:
+        sy = -np.sign(M[2,0])
+        y0 = sy*np.pi/2
+
+        # arbitrarily set z=0
+        z0 = 0 # so sz=0, cz=1
+
+        # compute x = arctan2( M[0,1]/sy, M[02]/sy )
+        x0 = np.arctan2( M[0,1]/sy, M[0,2]/sy )
+        return np.array((x0,y0,z0))
+    else:
+        y0 = np.arcsin( -M[2,0] )
+        c0 = np.cos(y0)
+
+        x0 = np.arctan2( M[2,1]/c0, M[2,2]/c0 )
+
+        z0 = np.arctan2( M[1,0]/c0, M[0,0]/c0 )
+        return np.array((x0,y0,z0))
