@@ -1,6 +1,7 @@
 import struct
 import numpy as np
 import numpy.typing as npt
+from math import *
 import h5py
 
 encoding = "utf-8"
@@ -14,10 +15,8 @@ def hdf5_string_reader(hdf5_dataset) -> str:
         ).reshape(bytes_data.shape)[0][0]
     else:
         # HDF5 ASCII strings
-        bytes_data = hdf5_dataset[()]
-        strings = np.array(
-            [b.decode("ascii") for b in bytes_data.flat], dtype=object
-        ).reshape(bytes_data.shape)
+        bytes_data = hdf5_dataset[()][:]
+        strings = str(bytes_data, 'utf-8')
     return strings
 
 
@@ -39,11 +38,11 @@ def read_string_binary(f, format, bytes_size) -> str:
     return rep
 
 
-def translationMatrix(dx, dy, dz) -> np.ndarray:
+def translationMatrix(dx: float, dy: float, dz: float) -> np.ndarray:
     return np.array([[1, 0, 0, dx], [0, 1, 0, dy], [0, 0, 1, dz], [0, 0, 0, 1]])
 
 
-def scaleMatrix(sx, sy, sz) -> np.ndarray:
+def scaleMatrix(sx: float, sy: float, sz: float) -> np.ndarray:
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
 
 
@@ -103,3 +102,14 @@ def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDA
     # homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])
     return points @ tform[:3, :3].T + tform[:3, 3]
     # return (tform @ homogeneous.T).T[:, :3]
+
+
+def rotation_xyz( theta ):
+    cx,cy,cz = np.cos(theta)
+    sx,sy,sz = np.sin(theta)
+    return np.array([
+        [cy*cz, -cx*sz + cz*sx*sy, cx*cz*sy + sx*sz, 0],
+        [cy*sz,  cx*cz + sx*sy*sz, cx*sy*sz - cz*sx, 0],
+        [  -sy,             cy*sx,            cx*cy, 0],
+        [    0,                 0,                0, 1]
+    ],dtype=float)

@@ -11,6 +11,7 @@ from ..utils.utils import (
     read_string_binary,
     hdf5_string_reader,
     transform_points_forward,
+    rotation_xyz,
 )
 from ..utils.consolidation import consolidate_scan
 
@@ -344,9 +345,20 @@ class Scan:
             self.voxDim.dx, self.voxDim.dy, -self.voxDim.dz
         )
         move_probe_up: np.ndarray = translationMatrix(
-            0, 0, -self.depth.depthNear * 0.001
+            0, 0, 0.001 * -self.depth.depthNear 
         )
         return move_probe_up @ scale_to_metric @ center_probe @ shift_voxel
+
+    def get_ProbeToLab(self):
+        rep = []
+        for i in range(self.probeToLabsRotations.matricesCount):
+            rot = (self.probeToLabsRotations.matricesList[i].x, self.probeToLabsRotations.matricesList[i].y, self.probeToLabsRotations.matricesList[i].z)
+            Rm = rotation_xyz(rot)
+            Rm.T[3][0] = self.probeToLabsTranslations.matricesList[i].x
+            Rm.T[3][1] = self.probeToLabsTranslations.matricesList[i].y
+            Rm.T[3][2] = self.probeToLabsTranslations.matricesList[i].z
+            rep.append(Rm)
+        return rep
 
     def __str__(self) -> str:
         rep = (
