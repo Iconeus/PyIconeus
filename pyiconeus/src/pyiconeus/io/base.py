@@ -54,6 +54,7 @@ def read_raw(filepath: str, fileheader: str, blockStart: int = 1, blockEnd: int 
 def dispatch_extension(
     filepath: str, fileheader: str | None, blockStart: int = 1, blockEnd: int = 1
 ) -> Scan | Bps | Roi | Raw:
+    """Returns the correct PyIconeus object by checking the file format of the given path"""
     if filepath.endswith(".scan"):
         return read_scan(filepath)
     elif filepath.endswith(".bps"):
@@ -73,6 +74,9 @@ def dispatch_extension(
 def open_path(
     path: str, path2: str | None = None, blockStart: int = 1, blockEnd: int = 1
 ) -> Union[Scan, Bps, Roi, Raw]:
+    """Main IO function.
+    Checks if the file exist, then dispatch the path in the correct function.
+    """
     if not os.path.isfile(path):
         raise FileNotFoundError(
             2, "The following file does not exist", path

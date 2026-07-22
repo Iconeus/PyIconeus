@@ -1,21 +1,22 @@
 import numpy as np
 from pyiconeus.io.base import read_bri
-from pyiconeus.models.Roi import Roi, RoiColor
+from pyiconeus.models.Roi import RoiColor
+import pyiconeus
 
 
 def test_load_hdf5():
-    roi_test: Roi = read_bri("./tests/data" + "/roi_for_4DStacked.bri")
+    roi_test: pyiconeus.Roi = read_bri("./tests/data" + "/roi_for_4DStacked.bri")
     assert roi_test is not None
 
 
 def test_load_binary():
-    roi_test: Roi = read_bri("./tests/data" + "/roiread_binary.bri")
+    roi_test: pyiconeus.Roi = read_bri("./tests/data" + "/roiread_binary.bri")
     assert roi_test is not None
 
 
 def test_roi_dispatch_version():
-    roi_test_hdf5: Roi = read_bri("./tests/data" + "/roi_for_4DStacked.bri")
-    roi_test_binary: Roi = read_bri("./tests/data" + "/roiread_binary.bri")
+    roi_test_hdf5: pyiconeus.Roi = read_bri("./tests/data" + "/roi_for_4DStacked.bri")
+    roi_test_binary: pyiconeus.Roi = read_bri("./tests/data" + "/roiread_binary.bri")
     print("\nRoi Hdf5")
     print(roi_test_hdf5)
     print("\nRoi binary")
@@ -25,7 +26,7 @@ def test_roi_dispatch_version():
 
 
 def test_roi_values():
-    roi_test: Roi = read_bri("./tests/data" + "/Cortex.bri")
+    roi_test: pyiconeus.Roi = read_bri("./tests/data" + "/Cortex.bri")
     assert roi_test.list[0].name == "Isocortex (L)"
     color: RoiColor =  roi_test.list[0].color
     assert color.r == float(112 / 255)

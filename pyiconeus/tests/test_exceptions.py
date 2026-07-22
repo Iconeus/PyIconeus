@@ -1,6 +1,7 @@
 import pytest
 import os
-from pyiconeus.io.base import open_path, check_fourCC
+from pyiconeus import open_path
+from pyiconeus.io.base import check_fourCC
 
 def test_invalid_file_open_path():
     with pytest.raises(FileNotFoundError) as exception:

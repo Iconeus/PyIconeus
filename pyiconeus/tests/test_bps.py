@@ -1,6 +1,5 @@
 import numpy as np
-from pyiconeus.models.Scan import Scan
-from pyiconeus.models.Bps import Bps
+import pyiconeus
 from pyiconeus.io.base import read_bps
 
 
@@ -11,10 +10,10 @@ def test_bps_load():
 
 
 def test_assign_bps():
-    scan: Scan = Scan(
+    scan: pyiconeus.Scan = pyiconeus.Scan(
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
     )
-    bps: Bps = read_bps("./tests/data" + "/Mouse.bps")
+    bps: pyiconeus.Bps = read_bps("./tests/data" + "/Mouse.bps")
     scan.bps = bps
     assert scan.bps is not None
 
@@ -51,7 +50,7 @@ def test_bps_v2_data():
             [0.0, 0.0, 0.0, 1.0],
         ]
     )
-    bps: Bps = read_bps(
+    bps: pyiconeus.Bps = read_bps(
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
     )
     print("data: ")
