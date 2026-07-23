@@ -108,8 +108,8 @@ class Scan:
                     tr = np.copy(tform.T[3][0:3])
                     tform.T[3][0:3] = 0
                     eul = inverse_rotation_xyz(tform)
-                    translations[i] = tr
                     rotations[i] = eul
+                    translations[i] = tr
                     self.probeToLabsTranslations.setProbe2LabTransform(translations)
                     self.probeToLabsRotations.setProbe2LabTransform(rotations)
                 self.sizeX: int = self.voxels.shape[0]
@@ -265,7 +265,14 @@ class Scan:
 
 
     def canBeConsolidated(self, hdf5_data: h5py.Dataset):
-        if self.acquisitionMode == AcquisitionMode._4DScanCustom:
+        if self.acquisitionMode == AcquisitionMode._4DscanRCA or self.acquisitionMode == AcquisitionMode._3DscanRCA:
+            data = hdf5_data["Data"][:].T
+            time = hdf5_data["acqMetaData"]["theoricalTime"][:]
+            self.measuredTimes = np.tile(time, (data.shape[1], 1)).tolist()
+            self.probe.probeType = Probe.ProbeType.RCA
+            self.voxels = data
+            return False
+        elif self.acquisitionMode == AcquisitionMode._4DScanCustom:
             data: np.ndarray = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 1, 2, 5, 4, 3))
             blockRepeat: int = int(hdf5_data["acqMetaData"]["imgDim"]["nscanRepeat"][()][0][0])
@@ -273,6 +280,15 @@ class Scan:
             time = hdf5_data["acqMetaData"]["time"][:]
             self.measuredTimes = np.reshape(time, (nPose, blockRepeat))
             self.probe.probeType = Probe.ProbeType.Linear
+            self.voxels = data
+            return False
+        elif hdf5_data["Data"][:].shape[1] == 4 and hdf5_data["Data"][:].shape[4] == 1 and self.acquisitionMode == AcquisitionMode._4DScan:
+            data = hdf5_data["Data"][:].T
+            data = np.transpose(data, axes=(0, 3, 2, 5, 1, 6, 4))
+            self.nPose = 4 # Size Y
+            self.sizeY = 1
+            self.measuredTimes = np.tile(hdf5_data["acqMetaData"][:], (1, self.nPose)).tolist()
+            self.probe.probeType = Probe.ProbeType.MultiArray
             self.voxels = data
             return False
         return True
