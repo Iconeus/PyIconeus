@@ -7,7 +7,7 @@ import h5py
 import numpy.typing as npt
 from transforms3d.euler import euler2mat, mat2euler
 
-from .utils import squeeze_trailing
+from .utils import squeeze_trailing, rotation_xyz, translationMatrix
 
 
 def _fix_multiarray_probe(
@@ -253,7 +253,7 @@ def _deconvolve_probe_path(
             "Could not decompose probe tforms into center, translations and rotations."
         )
 
-    return (translations, rotations, center)
+    return (translations, rotations, translation_to_center_tform)
 
 
 def consolidate_scan(
@@ -341,7 +341,7 @@ def consolidate_scan(
         )
         return data, time, timeOriginal, np.array([probe2lab.T[3][:3]]), np.array([mat2euler(probe2lab)]), None
     
-    translations, rotations, _ = _deconvolve_probe_path(probe2lab)
+    translations, rotations, translation_to_center_tform = _deconvolve_probe_path(probe2lab)
 
     voxDimDy = float(np.mean(np.diff(translations)))
     probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
@@ -351,14 +351,10 @@ def consolidate_scan(
             rotation_index * len(rotations) : rotation_index * len(rotations)
             + len(rotations)
         ]
-        translation_same_rotation = np.array(
-            [
-                np.mean(translation_same_rotation.T[3][0]),
-                np.mean(translation_same_rotation.T[3][1]),
-                np.mean(translation_same_rotation.T[3][2]),
-            ]
-        )
-        probe2labTranslation[rotation_index] = translation_same_rotation
+        tformTranslation = translationMatrix(0, np.mean(translations), 0)
+        tformRotation = rotation_xyz(np.array([0.0, 0.0, np.radians(rotation)]))
+        translation_tform = translation_to_center_tform @ tformRotation @ tformTranslation
+        probe2labTranslation[rotation_index] = translation_tform.T[3][:3]
         probe2labRotation[rotation_index] = np.array([0.0, 0.0, np.radians(rotation)])
 
     translation_steps: npt.NDArray = np.diff(translations)
