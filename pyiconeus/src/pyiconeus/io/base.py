@@ -1,5 +1,5 @@
 import os
-from typing import Union
+from typing import Any
 
 from ..models.Bps import Bps
 from ..models.Raw import Raw
@@ -73,9 +73,28 @@ def dispatch_extension(
 
 def open_path(
     path: str, path2: str | None = None, blockStart: int = 1, blockEnd: int = 1
-) -> Union[Scan, Bps, Roi, Raw]:
+) -> Any:
     """Main IO function.
     Checks if the file exist, then dispatch the path in the correct function.
+
+    Last three parameters are optional for all files types except '.raw' files which needs to be paired with their corresponding '.hraw' file in the path2 parameter
+
+    Parameters
+    ----------
+
+    **path**: str
+        File path of the wanted PyIconeus object
+    **path2**: str (optional)
+        File path of the header file. (Only used with .raw files)
+    **blockStart**: int = 1 (optional)
+        The starting block number to get from the raw data
+    **blockEnd**: int = 1 (optional)
+        The last block for the raw data
+
+    Returns
+    -------
+
+    PyIconeus object depending of the given file
     """
     if not os.path.isfile(path):
         raise FileNotFoundError(

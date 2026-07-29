@@ -36,26 +36,26 @@ def _fix_multiarray_probe(
 
     Parameters
     ----------
-    data : numpy.ndarray
+    **data** : numpy.ndarray
         Data acquired using the multi-array probe, with shape ``(x, 4, z, r, p, c, e)``.
-    time : numpy.ndarray
+    **time** : numpy.ndarray
         The time array containing acquisition timings for each probe pose.
-    voxels2probe : numpy.ndarray
+    **voxels2probe** : numpy.ndarray
         The affine transformation from voxel space to probe space with shape ``(4, 4)``.
-    probe2lab : numpy.ndarray
+    **probe2lab** : numpy.ndarray
         The affine transformations from probe space to laboratory space with shape ``(p,
         4, 4)``.
 
     Returns
     -------
-    data : numpy.ndarray
+**    data** : numpy.ndarray
         The fixed data with shape ``(x, 1, z, r, 4 * p, c, e)``.
-    time : numpy.ndarray
+    **time** : numpy.ndarray
         The fixed `time` array, with duplicated timings for each probe of the
         multi-array probe at each probe pose.
-    voxels2probe : numpy.ndarray
-        The fixed `voxel2probe` affine with ``voxel2probe[1, 1] == 4e-4``.
-    probe2lab : numpy.ndarray
+    **voxels2probe** : numpy.ndarray
+        *The* fixed `voxel2probe` affine with ``voxel2probe[1, 1] == 4e-4``.
+    **probe2lab** : numpy.ndarray
         The fixed `probe2lab` affines, with ``probe2lab.shape[0] == 4 * p``.
     """
     probe_range = (data.shape[1] - 1) * voxels2probe[1, 1]
@@ -125,10 +125,10 @@ def _fix_voxels2probe(voxels2probe: npt.NDArray, data_shape_z: int) -> npt.NDArr
 
     Parameters
     ----------
-    voxels2probe : numpy.ndarray
+    **voxels2probe** : numpy.ndarray
         A (4, 4) affine transformation from MATLAB's *voxels* to fUSlab's *probe*
         coordinate systems.
-    data_shape_z : int
+    **data_shape_z** : int
         Size of the scan data's *z*-axis.
 
     Returns
@@ -177,12 +177,12 @@ def _transform_data_7d_to_6d(data: npt.NDArray) -> npt.NDArray:
 
     Parameters
     ----------
-    data : numpy.ndarray
+    **data** : numpy.ndarray
         The `data` array to transform from 7D format to 6D format.
 
     Returns
     -------
-    data : numpy.ndarray
+    **data** : numpy.ndarray
         The transformed `data` array.
     """
     if data.ndim > 5:
@@ -201,17 +201,17 @@ def _deconvolve_probe_path(
 
     Parameters
     ----------
-    tforms : numpy.ndarray
+    **tforms** : numpy.ndarray
         Array of homogeneous transformations from voxel coordinates to laboratory space
         with size ``(pose, 4, 4)``.
 
     Returns
     -------
-    translations : numpy.ndarray
+    **translations** : numpy.ndarray
         Array of :math:`y`-axis translations.
-    rotations : numpy.ndarray
+    **rotations** : numpy.ndarray
         Array of :math:`z`-axis translations.
-    center : numpy.ndarray
+    **center** : numpy.ndarray
         Array of center coordinates :math:`(x, y, z)`.
     """
     # Transformation center is defined as the "average" translation.
@@ -282,16 +282,16 @@ def consolidate_scan(
 
     Parameters
     ----------
-    scan : pyfus.scan.Scan
+    **scan** : pyfus.scan.Scan
         A scan to be consolidated.
-    copy : bool, optional
+    **copy** : bool, optional
         Whether or not the consolidated scan data is copied. Note that when poses are
         reordered, a copy is always performed. Default is ``True``.
 
     Returns
     -------
-    pyfus.scan.Scan
-        The consolidated scan.
+        Consolidated values of the scan:
+        **data**, **time**, **theoretical_time_indices**, **probe2labTranslation**, **probe2labRotation**, **voxDimDy**
     """
 
     data: npt.NDArray = dataset["Data"][:].T

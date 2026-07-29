@@ -1,3 +1,4 @@
+from io import BufferedReader
 import h5py
 import pytz
 import numpy as np
@@ -21,6 +22,22 @@ from ..models.Bps import Bps
 
 class Scan:
     def __init__(self, filepath: str, is_binary: bool) -> None:
+        """Scan class constructor. Reads the input file depending of the type set in 'is_binary'.
+        For scans v1 (not binary), the scan is filled with a lot of default values, matching the v2 format.
+
+        Parameters
+        ----------
+        **filepath**: str
+            The file path for the scan
+        **is_binary**: bool
+            Boolean indicating the version of the scan
+
+        Returns
+        -------
+
+        None
+
+        """
         self.sizeX: int
         self.sizeY: int
         self.sizeZ: int
@@ -72,7 +89,21 @@ class Scan:
         else:
             self.load_scan_hdf5(filepath)
 
-    def load_scan_hdf5(self, filepath) -> None:
+    def load_scan_hdf5(self, filepath: str) -> None:
+        """
+        V1 scan loading function
+
+        Parameters
+        ----------
+
+        **filepath**: str
+            HDF5 file path of the scan
+
+        Returns
+        -------
+
+        None
+        """
         with h5py.File(filepath, "r") as f:
             metaData: h5py.Dataset = f["scanMetaData"]
             date_str: str = hdf5_string_reader(metaData["Date"])
@@ -116,9 +147,13 @@ class Scan:
                 self.sizeY: int = self.voxels.shape[1]
                 self.sizeZ: int = self.voxels.shape[2]
                 self.nTime: int = self.voxels.shape[3]
-                self.nPose: int | Literal[1] = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
+                self.nPose: int | Literal[1] = (
+                    self.voxels.shape[4] if self.voxels.ndim > 4 else 1
+                )
                 if self.voxels.ndim < 6:
-                    self.voxels = self.voxels.reshape((self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1))
+                    self.voxels = self.voxels.reshape(
+                        (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1)
+                    )
             else:
                 (data, time, timeIndices, probeTranslation, probeRotation, dy) = (
                     consolidate_scan(f)
@@ -129,7 +164,9 @@ class Scan:
                 self.nTime: int = data.shape[3]
                 self.nPose: int | Literal[1] = data.shape[4] if data.ndim > 4 else 1
                 if data.ndim < 6:
-                    data = data.reshape((self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1))
+                    data = data.reshape(
+                        (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1)
+                    )
                 self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
                 self.probeToLabsTranslations.setProbe2LabTransform(probeTranslation)
                 self.probeToLabsRotations = ProbeToLabElements(self.nPose)
@@ -142,7 +179,21 @@ class Scan:
             self.voxDim.load_hdf5(acqMetaData["voxDim"], dt, dy)
             self.fill_default(f)
 
-    def matchAcquisitionMode(self, acqMetaData: h5py.Dataset):
+    def matchAcquisitionMode(self, acqMetaData: h5py.Dataset) -> None:
+        """
+        HDF5 helper function to correctly set the scan's acquisition mode
+
+        Parameters
+        ----------
+
+        **acqMetaData**: hdf5.Dataset
+            The aqcuisition dataset
+
+        Returns
+        -------
+
+        None
+        """
         _acquisitionMode = hdf5_string_reader(acqMetaData["acquisitionMode"])
         match _acquisitionMode:
             case "2Dscan":
@@ -175,7 +226,21 @@ class Scan:
                 self.acquisitionMode = AcquisitionMode._3DscanRCA
                 self.probe.probeType = Probe.ProbeType.RCA
 
-    def fill_default(self, f: h5py.Group):
+    def fill_default(self, f: h5py.Group) -> None:
+        """
+        Fill all missing values for the HDF5 file with their respective default values
+
+        Parameters
+        ----------
+
+        **f**: h5py.Dataset
+            The root dataset of the file
+
+        Returns
+        -------
+
+        None
+        """
         self.dim6 = Dim6()
         self.dim6.count = 1
         clutDefault = Dim6.ClutterFiltering()
@@ -249,7 +314,21 @@ class Scan:
             hdf5_string_reader(f["scanMetaData"]["Neuroscan_version"])
         )
 
-    def fillIcoScanVersion(self, neuroscan: str):
+    def fillIcoScanVersion(self, neuroscan: str) -> None:
+        """
+        Fill the IcoScanVersion's class using the given string for HDF5 files
+
+        Parameters
+        ----------
+
+        **neuroscan**: str
+            HDF5 string of the IcoScan version
+
+        Returns
+        -------
+
+        None
+        """
         if neuroscan.startswith("Conexus Software version V"):
             major = int(neuroscan[-3])
             minor = int(neuroscan[-1])
@@ -263,9 +342,25 @@ class Scan:
             return
         self.icoScanVersion = IcoScanVersion(major, minor, patch)
 
+    def canBeConsolidated(self, hdf5_data: h5py.Dataset) -> bool:
+        """
+        Check consolidation requirements. If it cannot be consolidated, do the appropriate modification to the element based on the acquisition mode
 
-    def canBeConsolidated(self, hdf5_data: h5py.Dataset):
-        if self.acquisitionMode == AcquisitionMode._4DscanRCA or self.acquisitionMode == AcquisitionMode._3DscanRCA:
+        Parameters
+        ----------
+
+        **hdf5_data**: h5py.Dataset
+            The HDF5 root dataset
+
+        Returns
+        -------
+        bool
+            Returns True if the scan can be consolidated, False otherwise
+        """
+        if (
+            self.acquisitionMode == AcquisitionMode._4DscanRCA
+            or self.acquisitionMode == AcquisitionMode._3DscanRCA
+        ):
             data = hdf5_data["Data"][:].T
             time = hdf5_data["acqMetaData"]["theoricalTime"][:]
             self.measuredTimes = np.tile(time, (data.shape[1], 1)).tolist()
@@ -275,25 +370,47 @@ class Scan:
         elif self.acquisitionMode == AcquisitionMode._4DScanCustom:
             data: np.ndarray = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 1, 2, 5, 4, 3))
-            blockRepeat: int = int(hdf5_data["acqMetaData"]["imgDim"]["nscanRepeat"][()][0][0])
+            blockRepeat: int = int(
+                hdf5_data["acqMetaData"]["imgDim"]["nscanRepeat"][()][0][0]
+            )
             nPose: int = int(hdf5_data["acqMetaData"]["imgDim"]["npose"][()][0][0])
             time = hdf5_data["acqMetaData"]["time"][:]
             self.measuredTimes = np.reshape(time, (nPose, blockRepeat))
             self.probe.probeType = Probe.ProbeType.Linear
             self.voxels = data
             return False
-        elif hdf5_data["Data"][:].shape[1] == 4 and hdf5_data["Data"][:].shape[4] == 1 and self.acquisitionMode == AcquisitionMode._4DScan:
+        elif (
+            hdf5_data["Data"][:].shape[1] == 4
+            and hdf5_data["Data"][:].shape[4] == 1
+            and self.acquisitionMode == AcquisitionMode._4DScan
+        ):
             data = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 3, 2, 5, 1, 6, 4))
-            self.nPose = 4 # Size Y
+            self.nPose = 4  # Size Y
             self.sizeY = 1
-            self.measuredTimes = np.tile(hdf5_data["acqMetaData"][:], (1, self.nPose)).tolist()
+            self.measuredTimes = np.tile(
+                hdf5_data["acqMetaData"][:], (1, self.nPose)
+            ).tolist()
             self.probe.probeType = Probe.ProbeType.MultiArray
             self.voxels = data
             return False
         return True
 
-    def load_scan_binary(self, filepath) -> None:
+    def load_scan_binary(self, filepath: str) -> None:
+        """
+        V2 scan loading function
+
+        Parameters
+        ----------
+
+        **filepath**: str
+            Binary file path of the scan
+
+        Returns
+        -------
+
+        None
+        """
         with open(filepath, "rb") as f:
             f.seek(32)
             dO: int = unpack("@Q", f.read(8))[0]
@@ -390,11 +507,32 @@ class Scan:
             )
             self.voxels = np.fromfile(f, dtype="d", count=dataSize)
             self.voxels = self.voxels.reshape(
-                (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, self.dim6.count),
-                order='F' # Reshape in Fortran-like order, since MATLAB uses the same order
+                (
+                    self.sizeX,
+                    self.sizeY,
+                    self.sizeZ,
+                    self.nTime,
+                    self.nPose,
+                    self.dim6.count,
+                ),
+                order="F",  # Reshape in Fortran-like order, since MATLAB uses the same order
             )
 
     def get_VoxelToProbe(self) -> np.ndarray:
+        """
+        Compute the VoxelToProbe affine
+
+        Parameters
+        ----------
+
+        None
+
+        Returns
+        -------
+
+        np.ndarray (4, 4)
+            The computed affine matrix
+        """
         shift_voxel: np.ndarray = translationMatrix(-1, -1, -1)
         center_probe: np.ndarray = translationMatrix(
             (float)(-((self.sizeX - 1) / 2)), (float)(-((self.sizeY - 1) / 2)), 0
@@ -403,14 +541,33 @@ class Scan:
             self.voxDim.dx, self.voxDim.dy, -self.voxDim.dz
         )
         move_probe_up: np.ndarray = translationMatrix(
-            0, 0, 0.001 * -self.depth.depthNear 
+            0, 0, 0.001 * -self.depth.depthNear
         )
         return move_probe_up @ scale_to_metric @ center_probe @ shift_voxel
 
-    def get_ProbeToLab(self):
+    def get_ProbeToLab(self) -> list[np.ndarray]:
+        """
+        Compute the ProbeToLabs matrices.
+        One translation matrix per rotation: The translation represents the mean translation of the volume for a specific probe rotation
+
+        Parameters
+        ----------
+
+        None
+
+        Returns
+        -------
+
+        list[np.ndarray]
+            list of affine matrix, one per rotation
+        """
         rep = []
         for i in range(self.probeToLabsRotations.matricesCount):
-            rot = (self.probeToLabsRotations.matricesList[i].x, self.probeToLabsRotations.matricesList[i].y, self.probeToLabsRotations.matricesList[i].z)
+            rot = (
+                self.probeToLabsRotations.matricesList[i].x,
+                self.probeToLabsRotations.matricesList[i].y,
+                self.probeToLabsRotations.matricesList[i].z,
+            )
             Rm = rotation_xyz(rot)
             Rm.T[3][0] = self.probeToLabsTranslations.matricesList[i].x
             Rm.T[3][1] = self.probeToLabsTranslations.matricesList[i].y
@@ -443,6 +600,7 @@ class Scan:
 
     __repr__ = __str__
 
+
 class VoxDim:
     def __init__(self, dx=0, dy=0, dz=0, dt=0, dr=0, dtheta=0) -> None:
         self.dx: float = dx
@@ -453,6 +611,24 @@ class VoxDim:
         self.dtheta: float = dtheta
 
     def load_hdf5(self, voxDimData: h5py.Dataset, dt: float, dy: float | None) -> None:
+        """
+        Fill the VoxDim's class with the given dataset and values depending if the scan has been consolidated or not
+
+        Parameters
+        ----------
+
+        **voxDimData**: h5py.Dataset
+            The VoxDim dataset of the HDF5 file
+        **dt**: float
+            The computed dt value
+        **dy**: float | None
+            The computed value of dy, None if not consolidated
+
+        Returns
+        -------
+
+        None
+        """
         self.dx: float = float(voxDimData["dx"][0][0])
         if dy is None:
             self.dy: float = float(voxDimData["dy"][0][0])
@@ -462,6 +638,20 @@ class VoxDim:
         self.dt = dt
 
     def load_binary(self, f) -> None:
+        """
+        Fill the VoxDim's class with the given binary stream
+
+        Parameters
+        ----------
+
+        **f**: BufferedReader
+            The binary stream
+
+        Returns
+        -------
+
+        None
+        """
         self.dx = unpack("@d", f.read(8))[0]
         self.dy = unpack("@d", f.read(8))[0]
         self.dz = unpack("@d", f.read(8))[0]
@@ -474,6 +664,7 @@ class VoxDim:
 
     __repr__ = __str__
 
+
 class IcoScanVersion:
     def __init__(self, major: int, minor: int, patch: int) -> None:
         self.major = major
@@ -484,6 +675,7 @@ class IcoScanVersion:
         return f"{self.major}.{self.minor}.{self.patch}\n\tmajor: {self.major}\n\tminor: {self.minor}\n\tpatch: {self.patch}"
 
     __repr__ = __str__
+
 
 class Dim6:
     class Dim6Intent(IntEnum):
@@ -504,7 +696,21 @@ class Dim6:
             self.clutterFilterCutoffLow: float
             self.clutterFilterCutoffHigh: float
 
-        def load_binary(self, f) -> None:
+        def load_binary(self, f: BufferedReader) -> None:
+            """
+            ClutterFiltering's binary reader. Creates the correct Dim6 element with the given binary stream
+
+            Parameters
+            ----------
+
+            **f**: BufferedReader
+                The binary stream
+
+            Returns
+            -------
+
+            None
+            """
             self.clutterFilter = self.clutterFilterType(unpack("@L", f.read(4))[0])
             self.clutterFilterWindowDuration = unpack("@d", f.read(8))[0]
             if (
@@ -525,13 +731,26 @@ class Dim6:
 
         __repr__ = __str__
 
-        
     class VelocityBandwidthFiltering:
         def __init__(self) -> None:
             self.velocityMin: float
             self.velocityMax: float
 
-        def load_binary(self, f) -> None:
+        def load_binary(self, f: BufferedReader) -> None:
+            """
+            VelocityBandwithFiltering's binary reader. Creates the correct Dim6 element with the given binary stream
+
+            Parameters
+            ----------
+
+            **f**: BufferedReader
+                The binary stream
+
+            Returns
+            -------
+
+            None
+            """
             self.velocityMin = unpack("@f", f.read(4))[0]
             self.velocityMax = unpack("@f", f.read(4))[0]
             f.seek(12, 1)
@@ -546,6 +765,20 @@ class Dim6:
         self.dim6element: set[tuple[Dim6.Dim6Intent, object]] = set()
 
     def load_binary(self, f) -> None:
+        """
+        Dim6's binary reader. Creates the correct Dim6 element with the given binary stream
+
+        Parameters
+        ----------
+
+        **f**: BufferedReader
+            The binary stream
+
+        Returns
+        -------
+
+        None
+        """
         self.count = unpack("@Q", f.read(8))[0]
         dim6intents: list[int] = []
         for _ in range(self.count):
@@ -578,6 +811,7 @@ class Dim6:
 
     __repr__ = __str__
 
+
 class AcquisitionMode(IntEnum):
     _2DScan = 0
     _3DScan = 1
@@ -605,9 +839,20 @@ class Probe:
         self.probeNumberOfElements: float
         self.probeModel: str
 
-    def fill_default(
-        self,
-    ):
+    def fill_default(self) -> None:
+        """
+        Fill the Probe class its default values
+
+        Parameters
+        ----------
+
+        None
+
+        Returns
+        -------
+
+        None
+        """
         if (
             self.name == "IcoPrime"
             or self.name == "unknown"
@@ -623,7 +868,21 @@ class Probe:
                 self.probeModel = "2390"
         self.probeRadiusOfCurvature = 0
 
-    def load_binary(self, f) -> None:
+    def load_binary(self, f: BufferedReader) -> None:
+        """
+        Probe's binary loader. Fills the Probe class with the given binary stream
+
+        Parameters
+        ----------
+
+        **f**: BufferedReader
+            The binary stream
+
+        Returns
+        -------
+
+        None
+        """
         self.probeType = self.ProbeType(unpack("@L", f.read(4))[0])
         self.probeCentralFrequency = unpack("@d", f.read(8))[0]
         self.probePitch = unpack("@d", f.read(8))[0]
@@ -647,6 +906,7 @@ class Probe:
 
     __repr__ = __str__
 
+
 class ProbeToLabElements:
     class ProbeToLabMatrices:
         def __init__(self, x: float, y: float, z: float) -> None:
@@ -664,12 +924,40 @@ class ProbeToLabElements:
         self.matricesList: list[self.ProbeToLabMatrices] = []
 
     def setProbe2LabTransform(self, transform: np.ndarray) -> None:
+        """
+        Set the given transform vector as the A ProbeToLab element (for HDF5 reader)
+
+        Parameters
+        ----------
+
+        **transform**: np.ndarray
+            The vector of 3 element of the translation/rotation matrix components
+
+        Returns
+        -------
+
+        None
+        """
         for t in transform:
             self.matricesList.append(
                 self.ProbeToLabMatrices(float(t[0]), float(t[1]), float(t[2]))
             )
 
-    def load_binary(self, f) -> None:
+    def load_binary(self, f: BufferedReader) -> None:
+        """
+        Reads the ProbeToLab Translation/Rotation from the binary stream
+
+        Parameters
+        ----------
+
+        **f**: BufferedReader
+            The Binary stream
+
+        Returns
+        -------
+
+        None
+        """
         for _ in range(self.matricesCount):
             x = unpack("@d", f.read(8))[0]
             y = unpack("@d", f.read(8))[0]
@@ -684,12 +972,29 @@ class ProbeToLabElements:
 
     __repr__ = __str__
 
+
 class Depth:
     def __init__(self) -> None:
         self.depthNear: float
         self.depthFar: float
 
-    def fill_default(self, voxel2probe: np.ndarray, sizeZ: float):
+    def fill_default(self, voxel2probe: np.ndarray, sizeZ: float) -> None:
+        """
+        Fill the default depths values
+
+        Parameters
+        ----------
+
+        **voxel2probe**: np.ndarray
+            The VoxelToProbe Matrix
+        **sizeZ**: float
+            The Z size of the acquisition
+
+        Returns
+        -------
+
+        None
+        """
         tmp: np.ndarray = transform_points_forward(voxel2probe, np.array([1, 1, 1]))
         self.depthNear = float(abs(tmp[2]) * 1e3)
         tmp = transform_points_forward(voxel2probe, np.array([1, 1, sizeZ]))
@@ -699,6 +1004,7 @@ class Depth:
         return f"\n\tnear: {self.depthNear}\n\tfar: {self.depthFar}"
 
     __repr__ = __str__
+
 
 class GenderType(IntEnum):
     Undefined = 0

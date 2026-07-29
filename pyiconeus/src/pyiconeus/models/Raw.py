@@ -5,7 +5,63 @@ from .Scan import Depth, VoxDim
 
 
 class Raw:
+    """
+    Raw class contains the metadata of the acquisition and its raw data
+
+    Attributes
+    ----------
+
+    **metadata**: Raw.Metadata
+        The metadata of the acquisition
+    **data**: np.ndarray
+        The raw data of the acquisition
+    """
     class MetaData:
+        """
+        Metadata of the raw acquisition
+
+        Attributes
+        ----------
+
+        **transmitFraquency**: float
+            The transmit frequency of the acquisition
+
+        **prf**: float
+            The pulse repetition frequency
+
+        **speedOfSound**: float
+            The speed of sound
+
+        **frameRate**: float
+            Frame rate of the acquisition
+
+        **receiveAperture**: np.ndarray
+            Receive Aperture
+
+        **depth**: Scan.Depth
+            Near and Far depth
+
+        **flatAngles**: np.ndarray
+            Angles of the probe during the acquisition
+
+        **voxDim**: Scan.VoxDim
+            VoxDim data
+
+        **blockDim**: np.ndarray
+            BlockDim data
+
+        **compound**: bool
+            True if the images are compounded, False otherwise
+
+        **numberOfBlock**: int
+            Number of blocks
+
+        **isCrypted**: bool
+            Is the IQ crypted or not
+
+        **acquisitionMode**: *str*
+            Type of acquisition
+        """
         def __init__(self, fileheader):
             with h5py.File(fileheader, "r") as h5:
                 self.transmitFrequency: float = float(decryptData(h5["F1"], 1)[0])

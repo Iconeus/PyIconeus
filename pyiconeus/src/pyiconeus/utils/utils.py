@@ -1,3 +1,4 @@
+from io import BufferedReader
 import struct
 import numpy as np
 import numpy.typing as npt
@@ -6,7 +7,22 @@ import h5py
 encoding = "utf-8"
 
 
-def hdf5_string_reader(hdf5_dataset) -> str:
+def hdf5_string_reader(hdf5_dataset: h5py.Dataset) -> str:
+    """
+    Util function used to read an HDF5 string element depending of the internal type
+
+    Parameters
+    ----------
+
+    **hdf5_dataset**: h5py.Dataset
+        The HDF5 string element
+
+    Returns
+    -------
+
+    str
+        The decode string
+    """
     if h5py.check_string_dtype(hdf5_dataset.dtype).encoding == "utf-8":
         bytes_data = hdf5_dataset[()]
         strings = np.array(
@@ -19,7 +35,21 @@ def hdf5_string_reader(hdf5_dataset) -> str:
     return strings
 
 
-def hdf5_printer(hdf5_dataset) -> None:
+def hdf5_printer(hdf5_dataset: h5py.Dataset) -> None:
+    """
+    Pretty print of a hdf5 dataset parameters
+
+    Parameters
+    ----------
+
+    **hdf5_dataset**: h5py.Dataset
+        The HDF5 Dataset to display
+
+    Returns
+    -------
+
+    None
+    """
     print("HDF5 element:")
     print("Shape: " + str(hdf5_dataset.shape[0]) + "," + str(hdf5_dataset.shape[1]))
     print("Size: " + str(hdf5_dataset.size))
@@ -29,23 +59,97 @@ def hdf5_printer(hdf5_dataset) -> None:
     print()
 
 
-def read_string_binary(f, format, bytes_size) -> str:
+def read_string_binary(f: BufferedReader, format: str, bytes_size: int) -> str:
+    """
+    String reader for Iconeus binary files
+
+    Parameters
+    ----------
+
+    **f**: BufferedReader
+        Binary file stream
+    **format**: str
+        String format for struct.unpack. Tells the type of the element to read
+    **bytes_size**: int
+        Number of element of type 'format' to read
+
+    Returns
+    -------
+
+    str
+        The resulted string of size 'bytes_size'
+    """
     stringSize = struct.unpack(format, f.read(bytes_size))[0]
-    rep = ""
+    string = ""
     for _ in range(stringSize):
-        rep += str(struct.unpack("@s", f.read(1))[0], encoding)
-    return rep
+        string += str(struct.unpack("@s", f.read(1))[0], encoding)
+    return string
 
 
 def translationMatrix(dx: float, dy: float, dz: float) -> np.ndarray:
+    """
+    Create a 4x4 tform with given translation
+
+    Parameters
+    ----------
+
+    **dx**: float
+        x-component of the translation
+    **dy**: float
+        y-component of the translation
+    **dz**: float
+        z-component of the translation
+
+    Returns
+    -------
+
+    np.ndarray
+        The 4x4 tform
+    """
     return np.array([[1, 0, 0, dx], [0, 1, 0, dy], [0, 0, 1, dz], [0, 0, 0, 1]])
 
 
 def scaleMatrix(sx: float, sy: float, sz: float) -> np.ndarray:
+    """
+    Create a 4x4 tform with given scale components
+
+    Parameters
+    ----------
+
+    **dx**: float
+        x-component of the scaling
+    **dy**: float
+        y-component of the scaling
+    **dz**: float
+        z-component of the scaling
+
+    Returns
+    -------
+
+    np.ndarray
+        The 4x4 tform
+    """
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
 
 
-def decryptData(value, n: int) -> np.ndarray:
+def decryptData(value: np.ndarray, n: int) -> np.ndarray:
+    """
+    Util function to decrypt raw data that have been encrypted in first versions of '.raw' files
+
+    Parameters
+    ----------
+
+    **value**: np.ndarray
+        The crypted value
+    **n**: int
+        The index of the element in the hdf5 to be decrypted
+
+    Returns
+    -------
+
+    **nbr**: np.ndarray
+        The decrypted value
+    """
     if value.shape[0] == 1:
         nbrc: np.ndarray = np.asarray(value, dtype=float)[0]
     else:
@@ -61,9 +165,9 @@ def squeeze_trailing(arr: npt.NDArray, initial: int = 0) -> npt.NDArray:
 
     Parameters
     ----------
-    arr : numpy.ndarray
+    **arr** : numpy.ndarray
         Array to squeeze trailing unitary dimensions from.
-    initial : int, optional
+    **initial** : int, optional
         Axes up to index `initial` (not included) will not be squeezed even if they're
         trailing unitary. Default is 0.
 
@@ -81,30 +185,43 @@ def squeeze_trailing(arr: npt.NDArray, initial: int = 0) -> npt.NDArray:
 
 
 def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDArray:
-    """Applique une transformation affine à des points 3D.
+    """Applies a affine transform to 3D-points
 
-    Équivalent de `affine3d.transformPointsForward` (MATLAB), avec la convention
-    numpy (vecteur colonne) : `tform @ [x, y, z, 1]`.
+    Equivalent of MATLAB's 'affine3d.transformPointsForward', with regards of numpy's convention (column vector):
+    `tform @ [x, y, z, 1]`
 
     Parameters
     ----------
-    tform : (4, 4) ndarray
-        Matrice affine homogène.
-    points : (N, 3) ndarray
-        Points à transformer.
+    **tform** : (4, 4) ndarray
+        Homogenous affine matrix
+    **points** : (N, 3) ndarray
+        Points to transform
 
     Returns
     -------
     (N, 3) ndarray
-        Points transformés.
+        Transformed points
     """
-    # homogeneous = np.hstack([points, np.ones((points.shape[0], 1))])
     return points @ tform[:3, :3].T + tform[:3, 3]
-    # return (tform @ homogeneous.T).T[:, :3]
 
 
-def rotation_xyz( theta ):
-    cx,cy,cz = np.cos(theta)
+def rotation_xyz( theta: tuple[float, float, float] ):
+    """
+    Create a rotation matrix in xyz order using 'theta'
+
+    Parameters
+    ----------
+
+    **theta**: float
+        The degree of rotation in radians
+
+    Returns
+    -------
+
+    np.ndarray
+        The 4x4 rotation matrix
+    """
+    cx, cy, cz = np.cos(theta)
     sx,sy,sz = np.sin(theta)
     return np.array([
         [cy*cz, -cx*sz + cz*sx*sy, cx*cz*sy + sx*sz, 0],
@@ -115,6 +232,21 @@ def rotation_xyz( theta ):
 
 
 def inverse_rotation_xyz( M ):
+    """
+    Computes the vector of euler angles from a rotation matrix
+
+    Parameters
+    ----------
+
+    **M**: np.ndarray
+        The rotation matrix
+
+    Returns
+    -------
+
+    np.ndarray: (x, y, z)
+        Vector of euler angles
+    """
     if np.abs(M[2,0]) > 1.0:
         sy = -np.sign(M[2,0])
         y0 = sy*np.pi/2

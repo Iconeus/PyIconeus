@@ -4,17 +4,26 @@ from ..utils.utils import read_string_binary, hdf5_string_reader
 from struct import unpack
 
 
-# ROI
-# Extension: .bri
-# HDF5 and Binary file
-#
-# Each ROI file contains one folder containing different ROIs
-# ROI:
-# Color: R, G, B elements
-# Label: The name or the roi
-# Vertices: Array of 3-Dimensional vertices
-# Faces: Array of vertex indices composing the volume triangles (name: triangles in binary version)
 class Roi:
+    """
+    Region of Interest are 3D shapes, from an Atlas or created by the user.
+    The Roi call contains a list of RoiElements.
+
+    Attributes
+    ----------
+
+    color: RoiColor
+        The displayed color of the Roi
+
+    label: str
+        The name of the Roi
+
+    vertices: np.ndarray (N, 3)
+        The points in Brain space of the volume
+
+    faces: np.ndarray (N, 3)
+        Each row contains the indices of the vertices composing a triangle of the volume
+    """
     def __init__(self, filepath, is_binary: bool):
         self.list: list[RoiElements] = []
         if is_binary:

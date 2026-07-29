@@ -4,6 +4,15 @@ from struct import unpack
 
 
 class Bps:
+    """
+    Brain Positioning System, or BrainToLab is the affine matrix from the Brain space to the Lab space
+
+    Attributes
+    ----------
+
+    data: np.ndarray (4, 4)
+        The affine matrix
+    """
     def __init__(self, filepath: str, is_binary: bool = False) -> None:
         if is_binary:
             with open(filepath, "rb") as f:
