@@ -28,9 +28,10 @@ You can create a virtual environment using uv:
 
 ```console
 uv venv
+.venv/Script/activate
 ```
 
-2. Install PyIconeus
+3. Install PyIconeus
 
 With Uv:
 ```console
@@ -40,7 +41,7 @@ uv add pyiconeus
 With pip:
 
 ```console
-pip install pyiconeus
+uv pip install pyiconeus
 ```
 
 Or with the sources:
@@ -48,9 +49,17 @@ Or with the sources:
 uv pip install -e .
 ```
 
+4. Check installation
+
+Run the tests to see if they all passes
+
+```console
+pytest
+```
+
 ## Usage
 
-Examples scripts can be found in 'pyiconeus/examples' to understand how to use the library
+Examples scripts can be found in './examples' to understand how to use the library
 
 ## License
 
