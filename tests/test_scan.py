@@ -150,3 +150,4 @@ def test_RCA_loading():
     scan: Scan = Scan("./tests/data" + "/4Dscan_1_15_15_15_8_fus3D.source_v2.scan", True)
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
+    assert scan.probe.name == "IcoPrime"
