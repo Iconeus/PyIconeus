@@ -1,6 +1,6 @@
 import numpy as np
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
-from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType
+from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType, Probe
 
 
 def test_check_fourCC():
@@ -14,14 +14,14 @@ def test_scan():
     scan = Scan(
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
     )
-    assert scan is not None
+    assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode._4DScan
 
 
 def test_scan_ULM_2D():
     scan = Scan("./tests/data" + "/TestULM2D_v2.source.scan", True)
     print(scan)
-    assert scan is not None
+    assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode._2DScan
     assert scan.sizeY == 1
 
@@ -66,7 +66,7 @@ def test_load_v1():
     scanv1: Scan = Scan(
         "./tests/data" + "/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False
     )
-    assert scanv1 is not None
+    assert isinstance(scanv1, Scan)
     assert scanv1.nPose == 1 # consolidated
 
 
@@ -134,7 +134,7 @@ def test_compare_acqMetaData():
 
 def test_4DCustomScan():
     scan: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.scan", False)
-    assert scan is not None
+    assert isinstance(scan, Scan)
     assert scan.probeToLabsTranslations.matricesCount == 3
     assert scan.sizeX == 128
     assert scan.nTime == 572
@@ -143,5 +143,10 @@ def test_4DCustomScan():
 
 def test_scan_tomo():
     scan: Scan = Scan("./tests/data" + "/Tomographie_Compound.scan", False)
-    assert scan is not None
+    assert isinstance(scan, Scan)
     assert scan.ultrafastSamplingFrequency == 62.5
+
+def test_RCA_loading():
+    scan: Scan = Scan("./tests/data" + "/4Dscan_1_15_15_15_8_fus3D.source_v2.scan", True)
+    assert isinstance(scan, Scan)
+    assert scan.probe.probeType == Probe.ProbeType.RCA

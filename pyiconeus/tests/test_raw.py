@@ -9,7 +9,7 @@ def test_read_raw():
     raw = read_raw(
         "./tests/data" + "/TestULM2D_v2.raw", "./tests/data" + "/TestULM2D_v2.hraw"
     )
-    assert raw is not None
+    assert isinstance(raw, pyiconeus.Raw)
 
 
 def test_raw_val():

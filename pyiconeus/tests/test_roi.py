@@ -6,12 +6,12 @@ import pyiconeus
 
 def test_load_hdf5():
     roi_test: pyiconeus.Roi = read_bri("./tests/data" + "/roi_for_4DStacked.bri")
-    assert roi_test is not None
+    assert isinstance(roi_test, pyiconeus.Roi)
 
 
 def test_load_binary():
     roi_test: pyiconeus.Roi = read_bri("./tests/data" + "/roiread_binary.bri")
-    assert roi_test is not None
+    assert isinstance(roi_test, pyiconeus.Roi)
 
 
 def test_roi_dispatch_version():
@@ -21,8 +21,8 @@ def test_roi_dispatch_version():
     print(roi_test_hdf5)
     print("\nRoi binary")
     print(roi_test_binary)
-    assert roi_test_hdf5 is not None
-    assert roi_test_binary is not None
+    assert isinstance(roi_test_hdf5, pyiconeus.Roi)
+    assert isinstance(roi_test_binary, pyiconeus.Roi)
 
 
 def test_roi_values():

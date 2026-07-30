@@ -4,8 +4,8 @@ from pyiconeus.io.base import read_bps
 
 
 def test_bps_load():
-    bps = read_bps("./tests/data" + "/Mouse.bps")
-    assert bps is not None
+    bps: pyiconeus.Bps = read_bps("./tests/data" + "/Mouse.bps")
+    assert isinstance(bps, pyiconeus.Bps)
     assert bps.data.shape == np.ndarray((4,4)).shape
 
 
@@ -15,14 +15,14 @@ def test_assign_bps():
     )
     bps: pyiconeus.Bps = read_bps("./tests/data" + "/Mouse.bps")
     scan.bps = bps
-    assert scan.bps is not None
+    assert isinstance(bps, pyiconeus.Bps)
 
 
 def test_load_bps_v2():
     bps = read_bps(
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
     )
-    assert bps is not None
+    assert isinstance(bps, pyiconeus.Bps)
     assert bps.data.shape == np.ndarray((4,4)).shape
 
 
