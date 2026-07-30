@@ -8,6 +8,7 @@
 ## Table of Contents
 
 - [Installation](#installation)
+- [Usage](#usage)
 - [License](#license)
 
 ## Installation
@@ -15,6 +16,10 @@
 ```console
 pip install pyiconeus
 ```
+
+## Usage
+
+Examples scripts can be found in 'pyiconeus/examples' to understand how to use the library
 
 ## License
 
