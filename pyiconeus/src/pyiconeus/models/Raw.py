@@ -98,10 +98,12 @@ class Raw:
                     nBlockToSkip * nFramesPerBlock * nCompound * sizeX * sizeZ * 2 * 4
                 )
                 f.seek(sizeToSkip, 1)
-            nBlockToRead = 1
-            if blockEnd > blockStart:
-                blockEnd: int = min(blockEnd, self.metadata.numberOfBlock)
-                nBlockToRead = blockEnd - nBlockToSkip
+            if blockEnd < blockStart:
+                raise RuntimeError("blockEnd must be greater or equal to blockStart")
+            if (blockEnd > self.metadata.numberOfBlock):
+                raise RuntimeWarning("Passed blockEnd argument was greater than the total number of block. Automatically set to numberOfBlock")
+            blockEnd: int = min(blockEnd, self.metadata.numberOfBlock)
+            nBlockToRead = blockEnd - nBlockToSkip
 
             n_elements = int(
                 2 * sizeX * sizeY * sizeZ * nCompound * nFramesPerBlock * nBlockToRead

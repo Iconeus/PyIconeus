@@ -61,3 +61,8 @@ def test_open_raw_invalid_header_extention():
         open_path( "./tests/data/TestULM2D_v2.raw", "./tests/data/Mouse.bps")
     assert exception is not None
     assert str(exception.value) == "fileheader './tests/data/Mouse.bps' must end with .hraw for a .raw file"
+
+def test_raw_wrong_block_number():
+    with pytest.raises(RuntimeError) as exception:
+        open_path( "./tests/data/TestULM2D_v2.raw", "./tests/data/TestULM2D_v2.hraw", 5, 3)
+    assert str(exception.value) == "blockEnd must be greater or equal to blockStart"
