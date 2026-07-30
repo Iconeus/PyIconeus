@@ -1,6 +1,6 @@
 *__pycache__*
-pyiconeus/tests/data
-pyiconeus/.vscode/settings.json
-pyiconeus/temp.py
-pyiconeus/tests/data.zip
-pyiconeus/.vscode
+tests/data
+.vscode/settings.json
+temp.py
+tests/data.zip
+.vscode
