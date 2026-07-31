@@ -35,14 +35,10 @@ extensions = [
     "sphinx.ext.intersphinx",   # Link out to numpy/h5py/python documentation
 ]
 
-# Automatically generate the stub .rst files referenced by `autosummary`
-# directives (see docs/api.rst) instead of having to write them by hand.
+
 autosummary_generate = True
 autosummary_imported_members = False
-# `pyiconeus/__init__.py` re-exports only its public API via `__all__`; that
-# list must NOT be used to decide which *submodules* autosummary recurses
-# into, otherwise `models`/`utils` (imported as `pyiconeus.models.Scan` etc.,
-# not as bare packages) would be silently skipped from the API reference.
+
 autosummary_ignore_module_all = True
 
 autodoc_default_options = {
@@ -68,5 +64,5 @@ language = "en"
 # -- Options for HTML output ----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
