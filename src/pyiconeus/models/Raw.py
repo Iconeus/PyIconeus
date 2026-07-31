@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+import warnings
 from ..utils.utils import decryptData
 from .Scan import Depth, VoxDim
 
@@ -62,7 +63,7 @@ class Raw:
         **acquisitionMode**: *str*
             Type of acquisition
         """
-        def __init__(self, fileheader):
+        def __init__(self, fileheader) -> None:
             with h5py.File(fileheader, "r") as h5:
                 self.transmitFrequency: float = float(decryptData(h5["F1"], 1)[0])
                 self.prf: float = float(decryptData(h5["F2"], 2)[0])
@@ -82,7 +83,7 @@ class Raw:
                 self.voxDim = VoxDim(voxDimData[0], voxDimData[1], voxDimData[2])
                 self.isCrypted: bool = bool(decryptData(h5["F12"], 12)[0])
 
-    def __init__(self, filepath, file_header, blockStart=1, blockEnd=1):
+    def __init__(self, filepath, file_header, blockStart=1, blockEnd=1) -> None:
         self.metadata = Raw.MetaData(file_header)
         nCompound: int = int(self.metadata.blockDim[3][0])
         nFramesPerBlock: int = int(self.metadata.blockDim[4][0])
@@ -101,7 +102,7 @@ class Raw:
             if blockEnd < blockStart:
                 raise RuntimeError("blockEnd must be greater or equal to blockStart")
             if (blockEnd > self.metadata.numberOfBlock):
-                raise RuntimeWarning("Passed blockEnd argument was greater than the total number of block. Automatically set to numberOfBlock")
+                warnings.warn(RuntimeWarning("Raw init", "Passed blockEnd argument was greater than the total number of block. Automatically set to numberOfBlock"))
             blockEnd: int = min(blockEnd, self.metadata.numberOfBlock)
             nBlockToRead = blockEnd - nBlockToSkip
 
