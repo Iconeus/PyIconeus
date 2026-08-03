@@ -1,156 +1,157 @@
-# Consolidation de scans fUS — Pseudocode explicatif
+# fUS Scan Consolidation — Explanatory Pseudocode
 
 ---
 
-## 1. Problème traité
+## 1. Problem Addressed
 
-Un scan slice-by-slice (sonde linéaire ou multi-array) est acquis en déplaçant la sonde
-selon un ensemble de *poses*. Chaque pose produit un volume avec sa propre affine
-`voxel → probe → lab`. Si les poses sont régulièrement espacées le long de l'axe *y*
-d'un pas proche de la largeur de tranche, l'union des volumes forme un
-échantillonnage cartésien dense équivalent à celui d'une sonde matricielle statique.
+A slice-by-slice scan (linear probe or multi-array) is acquired by moving the probe
+through a set of *poses*. Each pose produces a volume with its own affine
+`voxel → probe → lab`. If the poses are regularly spaced along the *y* axis with a
+step close to the slice width, the union of the volumes forms a dense Cartesian
+sampling equivalent to that of a static matrix probe.
 
-**Consolider** = transformer un jeu `(pose, y)` en une seule dimension `y'` continue,
-*sans interpolation* — juste une permutation/fusion d'axes — à condition que la grille
-soit effectivement régulière. Si elle ne l'est pas, on lève une erreur : les poses
-restent alors traitées séparément en amont.
+**Consolidating** = transforming a `(pose, y)` pair into a single continuous
+dimension `y'`, *without interpolation* — just a permutation/merging of axes —
+provided that the grid is actually regular. If it is not, an error is raised: the
+poses are then kept processed separately upstream.
 
 ---
 
-## 2. Pipeline principal — `consolidate_scan(dataset, copy)`
+## 2. Main Pipeline — `consolidate_scan(dataset, copy)`
 
 ```
-ENTRÉE : dataset (fichier HDF5 Iconeus : dataset["Data"], dataset["acqMetaData"])
-SORTIE : (data_consolidée, time_consolidé, matrices de translations et de rotations, taille en y d'un voxel après consolidation)
+INPUT : dataset (Iconeus HDF5 file : dataset["Data"], dataset["acqMetaData"])
+OUTPUT : (consolidated_data, consolidated_time, translation and rotation matrices, y-size of a voxel after consolidation)
 
-1. data ← flip(dataset["Data"].T, axe z)
-   .T : HDF5/MATLAB stocke en column-major, on retranspose vers l'ordre
-        (x, y, z, r, p, c, e) attendu côté Python.
-   flip(z) : inversion pour obtenir un repère direct, cf §4.2
+1. data ← flip(dataset["Data"].T, z axis)
+   .T : HDF5/MATLAB stores in column-major order; we transpose back to the
+        (x, y, z, r, p, c, e) order expected on the Python side.
+   flip(z) : inversion to obtain a right-handed frame, cf §4.2
 
-2. n_poses ← data.shape[4] si data a >4 dims, sinon 1
+2. n_poses ← data.shape[4] if data has >4 dims, otherwise 1
 
-3. time ← acqMetaData["time"] reshape (échantillons, n_poses)
-   si n_poses == 1 : time ← time[:, 0]   # on retombe en 1D
+3. time ← acqMetaData["time"] reshaped (samples, n_poses)
+   if n_poses == 1 : time ← time[:, 0]   # collapse back to 1D
 
-4. probe2lab   ← acqMetaData["probeToLab"]     # une affine 4x4 par pose
-   voxels2probe ← acqMetaData["voxelsToProbe"]  # affine unique (partagée par les poses)
+4. probe2lab   ← acqMetaData["probeToLab"]     # one 4x4 affine per pose
+   voxels2probe ← acqMetaData["voxelsToProbe"]  # single affine (shared across poses)
 
 5. voxels2probe ← FIX_VOXELS2PROBE(voxels2probe, data.shape[2])   # cf §3
-   correction indexation MATLAB (1-based) → Python (0-based)
-   + prise en compte du flip z de l'étape 1
+   correction for MATLAB (1-based) → Python (0-based) indexing
+   + accounting for the z flip from step 1
 
-6. SI sonde multi-array (4 barrettes empilées selon y, i.e. shape[1]==4 et ndim>4) :
+6. IF multi-array probe (4 stacked elements along y, i.e. shape[1]==4 and ndim>4) :
      (data, time, voxels2probe, probe2lab) ← FIX_MULTIARRAY_PROBE(...)   # cf §4
-   chaque barrette devient une pose indépendante à part entière
+   each element becomes a fully independent pose in its own right
 
 7. data ← TRANSFORM_7D_TO_6D(data)   # cf §5
-   fusion des dimensions "répétitions" et "cycles" en une unique dimension temps
+   merges the "repetitions" and "cycles" dimensions into a single time dimension
 
 8. (translations, rotations, _) ← DECONVOLVE_PROBE_PATH(probe2lab)   # cf §6
-   décompose les affines par pose en :
-     - un unique centre de rotation commun
-     - un ensemble de rotations distinctes autour de z
-     - un ensemble de translations distinctes le long de y
+   decomposes the per-pose affines into:
+     - a single common center of rotation
+     - a set of distinct rotations about z
+     - a set of distinct translations along y
 
-9. SI data.ndim < 5 :
-   une seule pose : rien à consolider
+9. IF data.ndim < 5 :
+   a single pose: nothing to consolidate
    WARN("Scan has only one probe pose.")
-   RETOURNER (data, time)
+   RETURN (data, time)
 
-10. translation_steps ← diff(translations)   # pas entre poses successives
+10. translation_steps ← diff(translations)   # step between successive poses
     median_step ← round(median(translation_steps), 6)
 
-11. pose_order ← argsort(translations)       # tri croissant selon y
+11. pose_order ← argsort(translations)       # sort ascending by y
     translations ← translations[pose_order]
 
-12. SI translation_steps n'est pas ≈ constant (tolérance 5 µm, précision moteur) :
+12. IF translation_steps is not ≈ constant (5 µm tolerance, motor precision) :
       RAISE("Poses are irregularly spaced: consolidation is impossible.")
-    la grille n'est pas cartésienne → pas de simple permutation possible
+    the grid is not Cartesian → a simple permutation is not possible
 
-13. SINON SI median_step < 100 µm OU median_step > 1 mm :
+13. ELSE IF median_step < 100 µm OR median_step > 1 mm :
       RAISE("... pose-wise affine transformations cannot be collapsed.")
-    pas trop fin (poses quasi confondues) ou trop grossier (poses trop
-    espacées pour "faire volume") → on préfère garder les poses séparées
+    step too fine (poses nearly coincident) or too coarse (poses too far
+    apart to "form a volume") → we prefer to keep the poses separate
 
-14. data ← pad(data, dims manquantes jusqu'à 6D avec des axes de taille 1)
+14. data ← pad(data, missing dims up to 6D with size-1 axes)
 
 15. data ← transpose(data, axes=(x, p, y, z, t, e))
-    data ← reshape en fusionnant (p, y) → un seul axe y' de taille p*y
-    ↔ MATLAB : permute puis reshape ; c'est que se fait la "consolidation" :
-      chaque pose apporte sa tranche y, l'ensemble forme l'axe y' continu.
+    data ← reshape merging (p, y) → a single y' axis of size p*y
+    ↔ MATLAB : permute then reshape ; this is where the "consolidation" actually
+      happens: each pose contributes its y slice, and together they form the
+      continuous y' axis.
 
-16. SI un réordonnancement est nécessaire (poses non déjà triées) OU copy=True :
-        data ← data[:, pose_order]     # réindexation ⇒ copie mémoire
+16. IF reordering is needed (poses not already sorted) OR copy=True :
+        data ← data[:, pose_order]     # reindexing ⇒ memory copy
 
-17. time ← time[:, pose_order].copy()   # même réordonnancement appliqué au temps
+17. time ← time[:, pose_order].copy()   # same reordering applied to time
 
 18. data ← SQUEEZE_TRAILING(data, initial=4)
-    # supprime les axes de taille 1 en fin de tableau, en gardant
-    # au minimum les 3 dimensions spatiales (x, y, z)
+    # removes trailing size-1 axes, while keeping
+    # at least the 3 spatial dimensions (x, y, z)
 
-19. RETOURNER (data, time, timeIndices, translations, rotations, voxDimDy)
+19. RETURN (data, time, timeIndices, translations, rotations, voxDimDy)
 ```
 
 ---
 
 ## 3. `_fix_voxels2probe(voxels2probe, data_shape_z)`
 
-Corrige l'affine *voxel → probe* issue des fichiers SCAN/ACQ pour l'usage PyIconeus :
+Corrects the *voxel → probe* affine coming from SCAN/ACQ files for use with PyIconeus:
 
 ```
-POUR i DANS {x, y, z} :
+FOR i IN {x, y, z} :
     voxels2probe[i, 3] += voxels2probe[i, i]
-    translation d'un demi-voxel : passage de l'indexation MATLAB
-    1-based à l'indexation Numpy 0-based (équivalent : origin(0) = origin(1) - pas)
+    half-voxel translation: conversion from MATLAB
+    1-based indexing to Numpy 0-based indexing (equivalent : origin(0) = origin(1) - step)
 
 voxels2probe[z, z]  *= -1
 voxels2probe[z, off] -= (data_shape_z - 1) * voxels2probe[z, z]
-    flip de l'axe z (cf étape 1 du pipeline principal) : on inverse le sens
-    de l'échelle ET on retranslate l'origine pour qu'elle pointe toujours
-    sur le même voxel physique après le flip (pas juste un changement de signe)
+    flip of the z axis (cf step 1 of the main pipeline): we invert the direction
+    of the scale AND retranslate the origin so that it still points to the same
+    physical voxel after the flip (not just a sign change)
 ```
 
 ---
 
 ## 4. `_fix_multiarray_probe(data, time, voxels2probe, probe2lab)`
 
-**Contexte matériel** : la sonde multi-array = 4 barrettes linéaires indépendantes
-empilées selon l'axe axial, séparées de 2.1 mm. Le logiciel d'acquisition IcoScan ne
-fournit qu'**une seule affine par pose** avec un pas de voxel grossier de 2.1 mm selon y,
-alors que chaque barrette échantillonne en réalité à ~400 µm. Sans correction,
-rééchantillonner donnerait un résultat totalement faux (les 4 barrettes seraient
-traitées comme 4 voxels contigus au lieu de 4 sous-volumes distincts).
+**Hardware context**: the multi-array probe = 4 independent linear elements stacked
+along the axial axis, 2.1 mm apart. The IcoScan acquisition software only provides
+**a single affine per pose**, with a coarse voxel step of 2.1 mm along y, whereas each
+element actually samples at ~400 µm. Without correction, resampling would give a
+completely wrong result (the 4 elements would be treated as 4 contiguous voxels
+instead of 4 distinct sub-volumes).
 
 ```
-1. probe_slice_translations ← positions relatives des 4 barrettes autour du
-   centre de la pose (linspace symétrique, pas = voxels2probe[y,y] d'origine)
+1. probe_slice_translations ← relative positions of the 4 elements around the
+   pose center (symmetric linspace, step = original voxels2probe[y,y])
 
-2. time ← dupliqué 4× (une timestamp par barrette, héritée de la pose commune)
+2. time ← duplicated 4× (one timestamp per element, inherited from the common pose)
 
-3. data : (x, 4, z, r, p, c, e) → réarrangé pour faire de l'axe "barrette"
-   (taille 4) un axe de pose à part entière, fusionné avec l'axe p existant
-   ↔ MATLAB : permute + reshape, comme à l'étape 17 du pipeline principal,
-     mais ici au niveau intra-pose plutôt qu'inter-pose
+3. data : (x, 4, z, r, p, c, e) → rearranged so that the "element" axis
+   (size 4) becomes a full pose axis, merged with the existing p axis
+   ↔ MATLAB : permute + reshape, similar to step 17 of the main pipeline,
+     but here at the intra-pose level rather than inter-pose
 
-4. POUR chaque pose ET chaque barrette (index 0..3) :
-       new_probe2lab[barrette::4] ← probe2lab[pose] @ translation(y = position barrette)
-   génère 4 affines "probe→lab" par pose originale, une par barrette,
-   en composant l'affine de pose avec une translation pure selon y
+4. FOR each pose AND each element (index 0..3) :
+       new_probe2lab[element::4] ← probe2lab[pose] @ translation(y = element position)
+   generates 4 "probe→lab" affines per original pose, one per element,
+   by composing the pose affine with a pure translation along y
 
-5. voxels2probe[y, y] ← 400 µm   # vrai pas inter-barrette
-   voxels2probe[y, off] ← recentrage de l'origine sur l'axe y
+5. voxels2probe[y, y] ← 400 µm   # true inter-element step
+   voxels2probe[y, off] ← recentering of the origin on the y axis
 
-6. Tri des tranches par translation y croissante :
-   - on isole la partie "translation pure" de chaque affine
-     (on annule la composante rotation en mettant la partie linéaire de la
-     translation à zéro, puis on ré-applique l'inverse pour isoler y)
-   - argsort sur cette composante y → sorting_indices
-   - data, time, new_probe2lab réordonnés selon sorting_indices
-   nécessaire car IcoScan optimise ses déplacements de sonde et ne
-   garantit donc pas un ordre croissant des poses en sortie
+6. Sorting of slices by increasing y translation :
+   - the "pure translation" part of each affine is isolated
+     (the rotation component is cancelled by zeroing the linear part of the
+     translation, then the inverse is reapplied to isolate y)
+   - argsort on this y component → sorting_indices
+   - data, time, new_probe2lab reordered according to sorting_indices
+   necessary because IcoScan optimizes its probe movements and therefore does
+   not guarantee an ascending order of poses in the output
 
-RETOURNER (data, time, voxels2probe, new_probe2lab)
+RETURN (data, time, voxels2probe, new_probe2lab)
 ```
 
 ---
@@ -158,51 +159,51 @@ RETOURNER (data, time, voxels2probe, new_probe2lab)
 ## 5. `_transform_data_7d_to_6d(data)`
 
 ```
-Format ACQ/SCAN (7D) : (x, y, z, r, p, c, e)
-    r = répétitions à une même pose, p = poses, c = cycles de poses, e = extra
+ACQ/SCAN format (7D) : (x, y, z, r, p, c, e)
+    r = repetitions at the same pose, p = poses, c = pose cycles, e = extra
 
-Format PyIconeus (6D) : (x, y, z, t, p, e)
-    t = temps (fusion de r et c)
+PyIconeus format (6D) : (x, y, z, t, p, e)
+    t = time (merge of r and c)
 
-SI ndim > 5 :
-    data ← moveaxis(c, position 5 → position 3)   # rapproche c de r
-    data ← reshape fusionnant (r, c) → t
-    équivalent MATLAB : permute puis reshape, sans réordonnancement
-      temporel supplémentaire — r et c restent contigus dans le nouvel axe t
-RETOURNER data
+IF ndim > 5 :
+    data ← moveaxis(c, position 5 → position 3)   # bring c closer to r
+    data ← reshape merging (r, c) → t
+    equivalent to MATLAB : permute then reshape, with no additional temporal
+      reordering — r and c remain contiguous within the new t axis
+RETURN data
 ```
 
 ---
 
 ## 6. `_deconvolve_probe_path(tforms)`
 
-Décompose un ensemble d'affines `voxel → lab` (une par pose) en trois composantes
-factorisées, sous l'hypothèse que les poses partagent **un centre commun**, **un jeu
-fini de rotations** (autour de z) et **un jeu fini de translations** (selon y) — comme
-un balayage 2D régulier en (rotation, translation) autour d'un centre fixe.
+Decomposes a set of `voxel → lab` affines (one per pose) into three factored
+components, under the assumption that the poses share **a common center**, **a
+finite set of rotations** (about z), and **a finite set of translations** (along
+y) — like a regular 2D sweep in (rotation, translation) around a fixed center.
 
 ```
-1. center ← moyenne des translations (colonne 3) de toutes les affines
-   translation_to_center ← affine de translation pure vers ce centre
+1. center ← average of the translations (column 3) of all affines
+   translation_to_center ← pure translation affine toward this center
 
-2. rotations ← angles d'Euler autour de z, valeurs UNIQUES parmi toutes les poses
-   ↔ décomposition rotation/translation façon `decompose44`, mais on ne
-     garde que l'angle z (rotation plane du balayage)
+2. rotations ← Euler angles about z, UNIQUE values among all poses
+   ↔ rotation/translation decomposition similar to `decompose44`, but only
+     the z angle (in-plane rotation of the sweep) is kept
 
-3. POUR chaque rotation ET chaque translation candidate associée à cette rotation :
-       tform_résiduelle ← inv(rotation) @ inv(translation_to_center) @ affine_originale
-       "on retire" au tour à tour la rotation et le recentrage : ce qui reste
-       est une translation pure selon y
-       translations[index] ← tform_résiduelle[y, off]
+3. FOR each rotation AND each translation candidate associated with that rotation :
+       residual_tform ← inv(rotation) @ inv(translation_to_center) @ original_affine
+       "removing" in turn the rotation and the recentering: what remains
+       is a pure translation along y
+       translations[index] ← residual_tform[y, off]
 
-4. translations ← round(6 décimales)   # évite les faux doublons dus au bruit numérique
-   translations ← valeurs uniques, ordre de première apparition (pas trié)
+4. translations ← round(6 decimal places)   # avoids false duplicates due to numerical noise
+   translations ← unique values, in order of first appearance (not sorted)
 
-5. VÉRIFICATION DE COHÉRENCE :
-   SI len(translations) * len(rotations) != nombre total de poses :
+5. CONSISTENCY CHECK :
+   IF len(translations) * len(rotations) != total number of poses :
        RAISE("Could not decompose probe tforms into center, translations and rotations.")
-   sinon, une instabilité numérique a fait "voir" trop de valeurs distinctes
-   → la structure en grille (rotation × translation) supposée n'est pas respectée
+   otherwise, numerical instability has made too many distinct values "visible"
+   → the assumed grid structure (rotation × translation) is not respected
 
-RETOURNER (translations, rotations, center)
+RETURN (translations, rotations, center)
 ```
