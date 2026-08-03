@@ -286,7 +286,7 @@ class Scan:
         self.probe.fill_default()
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
-        self.planeWaveAngles: np.ndarray = np.linspace(-10, 2, 10).tolist()
+        self.planeWaveAngles: np.ndarray = np.arange(-10, 12, 2, dtype=float).tolist()
         if self.probe.name == "IcoPrime 4D MultiArray":
             self.planeWaveAngles: np.ndarray = np.linspace(-12, 12, 8).tolist()
         self.transmitVoltage = 25
@@ -375,7 +375,7 @@ class Scan:
             )
             nPose: int = int(hdf5_data["acqMetaData"]["imgDim"]["npose"][()][0][0])
             time = hdf5_data["acqMetaData"]["time"][:]
-            self.measuredTimes = np.reshape(time, (nPose, blockRepeat))
+            self.measuredTimes = np.reshape(time, (nPose * blockRepeat)).tolist()
             self.probe.probeType = Probe.ProbeType.Linear
             self.voxels = data
             return False

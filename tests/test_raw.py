@@ -58,6 +58,7 @@ def test_raw_val():
     assert metadata.flatAngles[0] == raw.metadata.flatAngles[0]
     assert metadata.blockDim[0] == raw.metadata.blockDim[0]
     assert metadata.compound == raw.metadata.compound
+    assert metadata.compound == True
     assert metadata.numberOfBlock == raw.metadata.numberOfBlock
     assert metadata.acquisitionMode == raw.metadata.acquisitionMode
     assert metadata.depth.depthFar == raw.metadata.depth.depthFar

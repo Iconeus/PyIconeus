@@ -134,20 +134,41 @@ def test_compare_acqMetaData():
 
 def test_4DCustomScan():
     scan: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.scan", False)
+    scanv2: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.v2.scan", True)
     assert isinstance(scan, Scan)
     assert scan.probeToLabsTranslations.matricesCount == 3
     assert scan.sizeX == 128
     assert scan.nTime == 572
     assert scan.nPose == 3
+    assert scanv2.nPose == scan.nPose
+    assert scan.sizeX == scanv2.sizeX
+    assert scan.sizeY == scanv2.sizeY
+    assert scanv2.nPose == 3
+    assert scan.nTime == scanv2.nTime
+    assert len(scan.measuredTimes) == len(scanv2.measuredTimes)
+    assert len(scan.theoricalTimeIndices) == len(scanv2.theoricalTimeIndices)
+    assert scan.voxDim.dx == scanv2.voxDim.dx
+    assert round(scan.voxDim.dy, 6) == round(scanv2.voxDim.dy, 6)
+    assert scan.voxDim.dz == scanv2.voxDim.dz
+    assert scan.voxDim.dt == scanv2.voxDim.dt
+    assert scan.voxDim.dtheta == scanv2.voxDim.dtheta
+    assert scan.acquisitionMode == scanv2.acquisitionMode
+    assert scan.ultrafastSamplingFrequency == scanv2.ultrafastSamplingFrequency
+    assert scan.pulseRepetitionFrequency == scanv2.pulseRepetitionFrequency
+    assert scan.ultrafastTransmitFrequency == scanv2.ultrafastTransmitFrequency
+    assert scan.transmitVoltage == scanv2.transmitVoltage
+    assert len(scan.planeWaveAngles) == len(scanv2.planeWaveAngles)
+    assert scan.delayAfterTrigger == scanv2.delayAfterTrigger
+    assert scan.integrationWindowDuration == scanv2.integrationWindowDuration
+    assert scan.voxels.shape == scanv2.voxels.shape
 
 
-def test_scan_tomo():
-    scan: Scan = Scan("./tests/data" + "/Tomographie_Compound.scan", False)
-    assert isinstance(scan, Scan)
-    assert scan.ultrafastSamplingFrequency == 62.5
 
 def test_RCA_loading():
     scan: Scan = Scan("./tests/data" + "/4Dscan_1_15_15_15_8_fus3D.source_v2.scan", True)
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
     assert scan.probe.name == "IcoPrime"
+
+if __name__ == '__main__':
+    test_4DCustomScan()

@@ -117,7 +117,4 @@ class Raw:
         iQblock: np.ndarray = iQt[0, ...] + 1j * iQt[1, ...]
         iQblock = np.squeeze(iQblock)
 
-        if nCompound > 1:
-            # IQblock = mycompoundMethod(IQblock)
-            pass
         self.data: np.ndarray = iQblock

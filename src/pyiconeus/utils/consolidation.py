@@ -154,7 +154,7 @@ def _fix_voxels2probe(voxels2probe: npt.NDArray, data_shape_z: int) -> npt.NDArr
 
 
 def _transform_data_7d_to_6d(data: npt.NDArray) -> npt.NDArray:
-    """Transform a 7D data array (ACQ/SCAN format) to a 6D data array (PyfUS).
+    """Transform a 7D data array (ACQ/SCAN format) to a 6D data array (PyIconeus).
 
     The 7D data format used by Iconeus has shape ``(x, y, z, r, p, c, e)``:
 
