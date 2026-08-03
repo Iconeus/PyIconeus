@@ -26,6 +26,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install Hatch
       run: pipx install hatch
+    - name: Download test datas
+      run: python download_script.py
     - name: Run test
       run: hatch test
-
