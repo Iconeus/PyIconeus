@@ -1,6 +1,6 @@
 import numpy as np
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
-from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType, Probe
+from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType, Probe, Dim6
 
 
 def test_check_fourCC():

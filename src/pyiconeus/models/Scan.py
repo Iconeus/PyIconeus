@@ -124,7 +124,7 @@ class Scan:
             self.matchAcquisitionMode(acqMetaData)
             tmp = np.sort(acqMetaData["timeOriginal"][:], axis=0)
             dt = float(tmp[1][0] - tmp[0][0])
-            dy = float(acqMetaData["voxDim"]["dy"][0][0])
+            dy: float | None = float(acqMetaData["voxDim"]["dy"][0][0])
             if not self.canBeConsolidated(f):
                 self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
                 timeOriginal = acqMetaData["timeOriginal"][:]
@@ -143,11 +143,11 @@ class Scan:
                     translations[i] = tr
                     self.probeToLabsTranslations.setProbe2LabTransform(translations)
                     self.probeToLabsRotations.setProbe2LabTransform(rotations)
-                self.sizeX: int = self.voxels.shape[0]
-                self.sizeY: int = self.voxels.shape[1]
-                self.sizeZ: int = self.voxels.shape[2]
-                self.nTime: int = self.voxels.shape[3]
-                self.nPose: int | Literal[1] = (
+                self.sizeX = self.voxels.shape[0]
+                self.sizeY = self.voxels.shape[1]
+                self.sizeZ = self.voxels.shape[2]
+                self.nTime = self.voxels.shape[3]
+                self.nPose = (
                     self.voxels.shape[4] if self.voxels.ndim > 4 else 1
                 )
                 if self.voxels.ndim < 6:
@@ -158,11 +158,11 @@ class Scan:
                 (data, time, timeIndices, probeTranslation, probeRotation, dy) = (
                     consolidate_scan(f)
                 )
-                self.sizeX: int = data.shape[0]
-                self.sizeY: int = data.shape[1]
-                self.sizeZ: int = data.shape[2]
-                self.nTime: int = data.shape[3]
-                self.nPose: int | Literal[1] = data.shape[4] if data.ndim > 4 else 1
+                self.sizeX = data.shape[0]
+                self.sizeY = data.shape[1]
+                self.sizeZ = data.shape[2]
+                self.nTime = data.shape[3]
+                self.nPose = data.shape[4] if data.ndim > 4 else 1
                 if data.ndim < 6:
                     data = data.reshape(
                         (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1)
@@ -171,9 +171,9 @@ class Scan:
                 self.probeToLabsTranslations.setProbe2LabTransform(probeTranslation)
                 self.probeToLabsRotations = ProbeToLabElements(self.nPose)
                 self.probeToLabsRotations.setProbe2LabTransform(probeRotation)
-                self.measuredTimes: list[float] = time.reshape(-1).tolist()
+                self.measuredTimes = time.reshape(-1).tolist()
                 self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
-                self.voxels: np.ndarray = data
+                self.voxels = data
             self.integrationWindowDuration = float(acqMetaData["voxDim"]["dt"][0][0])
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"], dt, dy)
@@ -286,11 +286,11 @@ class Scan:
         self.probe.fill_default()
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
-        self.planeWaveAngles: np.ndarray = np.arange(-10, 12, 2, dtype=float).tolist()
+        self.planeWaveAngles= np.arange(-10, 12, 2, dtype=float).tolist()
         if self.probe.name == "IcoPrime 4D MultiArray":
-            self.planeWaveAngles: np.ndarray = np.linspace(-12, 12, 8).tolist()
+            self.planeWaveAngles = np.linspace(-12, 12, 8).tolist()
         self.transmitVoltage = 25
-        self.pulseRepetitionFrequency: int = len(self.planeWaveAngles) * 500
+        self.pulseRepetitionFrequency= len(self.planeWaveAngles) * 500
         self.isMultiplane = False
         self.delayAfterTrigger = 0
         self.sequenceName = "default sequence"
@@ -368,7 +368,7 @@ class Scan:
             self.voxels = data
             return False
         elif self.acquisitionMode == AcquisitionMode._4DScanCustom:
-            data: np.ndarray = hdf5_data["Data"][:].T
+            data = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 1, 2, 5, 4, 3))
             blockRepeat: int = int(
                 hdf5_data["acqMetaData"]["imgDim"]["nscanRepeat"][()][0][0]
@@ -450,13 +450,13 @@ class Scan:
             nPlaneWavesAngles = unpack("<L", f.read(4))[0]
             for _ in range(nPlaneWavesAngles):
                 self.planeWaveAngles.append(unpack("<d", f.read(8))[0])
-            tempVal = unpack("<L", f.read(4))
-            f.seek(tempVal[0] * 24 + 8, 1)
+            tempVal: int = unpack("<L", f.read(4))[0]
+            f.seek(tempVal * 24 + 8, 1)
             self.transmitVoltage = unpack("<d", f.read(8))[0]
             f.seek(4, 1)
             self.delayAfterTrigger = unpack("<d", f.read(8))[0]
-            tempVal = unpack("<L", f.read(4))
-            f.seek(tempVal[0] * 8, 1)
+            tempVal = unpack("<L", f.read(4))[0]
+            f.seek(tempVal * 8, 1)
             self.isMultiplane = unpack("<?", f.read(1))[0]
             f.seek(1, 1)
             self.integrationWindowDuration = unpack("<d", f.read(8))[0]
@@ -629,12 +629,12 @@ class VoxDim:
 
         None
         """
-        self.dx: float = float(voxDimData["dx"][0][0])
+        self.dx = float(voxDimData["dx"][0][0])
         if dy is None:
-            self.dy: float = float(voxDimData["dy"][0][0])
+            self.dy = float(voxDimData["dy"][0][0])
         else:
             self.dy = dy
-        self.dz: float = float(voxDimData["dz"][0][0])
+        self.dz = float(voxDimData["dz"][0][0])
         self.dt = dt
 
     def load_binary(self, f) -> None:
@@ -691,12 +691,12 @@ class Dim6:
             Butterworth = 2
 
         def __init__(self) -> None:
-            self.clutterFilter: self.clutterFilterType
+            self.clutterFilter: Dim6.ClutterFiltering.clutterFilterType
             self.clutterFilterWindowDuration: float
             self.clutterFilterCutoffLow: float
             self.clutterFilterCutoffHigh: float
 
-        def load_binary(self, f: BufferedReader) -> None:
+        def load_binary(self, f: BufferedReader) -> object:
             """
             ClutterFiltering's binary reader. Creates the correct Dim6 element with the given binary stream
 
@@ -722,6 +722,7 @@ class Dim6:
             else:
                 self.clutterFilterCutoffLow = unpack("<f", f.read(4))[0]
                 self.clutterFilterCutoffHigh = unpack("<f", f.read(4))[0]
+            return self
 
         def __str__(self) -> str:
             return (
@@ -736,7 +737,7 @@ class Dim6:
             self.velocityMin: float
             self.velocityMax: float
 
-        def load_binary(self, f: BufferedReader) -> None:
+        def load_binary(self, f: BufferedReader) -> object:
             """
             VelocityBandwithFiltering's binary reader. Creates the correct Dim6 element with the given binary stream
 
@@ -754,6 +755,7 @@ class Dim6:
             self.velocityMin = unpack("<f", f.read(4))[0]
             self.velocityMax = unpack("<f", f.read(4))[0]
             f.seek(12, 1)
+            return self
 
         def __str__(self) -> str:
             return f"\t\tVelocity Min: ${self.velocityMin}\n\t\tVelocity Max: ${self.velocityMax}\n"
@@ -831,7 +833,7 @@ class Probe:
 
     def __init__(self) -> None:
         self.name: str
-        self.probeType: self.ProbeType
+        self.probeType: Probe.ProbeType
         self.probeCentralFrequency: float
         self.probePitch: float
         self.probeElevationAperture: float
@@ -921,7 +923,7 @@ class ProbeToLabElements:
 
     def __init__(self, matricesCount) -> None:
         self.matricesCount: int = matricesCount
-        self.matricesList: list[self.ProbeToLabMatrices] = []
+        self.matricesList: list[ProbeToLabElements.ProbeToLabMatrices] = []
 
     def setProbe2LabTransform(self, transform: np.ndarray) -> None:
         """
