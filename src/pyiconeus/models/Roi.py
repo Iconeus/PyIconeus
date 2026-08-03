@@ -29,31 +29,31 @@ class Roi:
         if is_binary:
             with open(filepath, "rb") as f:
                 f.seek(12)
-                roi_count: int = unpack("@L", f.read(4))[0]
+                roi_count: int = unpack("<L", f.read(4))[0]
                 for _ in range(roi_count):
                     # Vertices
-                    vertices_count: int = unpack("@L", f.read(4))[0]
+                    vertices_count: int = unpack("<L", f.read(4))[0]
                     vertices: np.ndarray = np.ndarray(shape=(vertices_count, 3))
                     for i in range(vertices_count):
-                        vertices[i][0] = unpack("@d", f.read(8))[0]
-                        vertices[i][1] = unpack("@d", f.read(8))[0]
-                        vertices[i][2] = unpack("@d", f.read(8))[0]
+                        vertices[i][0] = unpack("<d", f.read(8))[0]
+                        vertices[i][1] = unpack("<d", f.read(8))[0]
+                        vertices[i][2] = unpack("<d", f.read(8))[0]
 
                     # Triangles
-                    indices_count: int = unpack("@L", f.read(4))[0]
+                    indices_count: int = unpack("<L", f.read(4))[0]
                     triangles: np.ndarray = np.ndarray(
                         shape=(indices_count, 3), dtype=int
                     )
                     for i in range(indices_count):
-                        triangles[i][0] = unpack("@L", f.read(4))[0]
-                        triangles[i][1] = unpack("@L", f.read(4))[0]
-                        triangles[i][2] = unpack("@L", f.read(4))[0]
+                        triangles[i][0] = unpack("<L", f.read(4))[0]
+                        triangles[i][1] = unpack("<L", f.read(4))[0]
+                        triangles[i][2] = unpack("<L", f.read(4))[0]
                     color: RoiColor = RoiColor(
-                        float(unpack("@f", f.read(4))[0]),
-                        float(unpack("@f", f.read(4))[0]),
-                        float(unpack("@f", f.read(4))[0]),
+                        float(unpack("<f", f.read(4))[0]),
+                        float(unpack("<f", f.read(4))[0]),
+                        float(unpack("<f", f.read(4))[0]),
                     )
-                    label: str = read_string_binary(f, "@L", 4)
+                    label: str = read_string_binary(f, "<L", 4)
                     self.list.append(RoiElements(color, vertices, triangles, label))
         else:
             with h5py.File(filepath, "r") as f:

@@ -413,86 +413,86 @@ class Scan:
         """
         with open(filepath, "rb") as f:
             f.seek(32)
-            dO: int = unpack("@Q", f.read(8))[0]
+            dO: int = unpack("<Q", f.read(8))[0]
             f.seek(92)
-            self.sizeX = unpack("@Q", f.read(8))[0]
-            self.sizeY = unpack("@Q", f.read(8))[0]
-            self.sizeZ = unpack("@Q", f.read(8))[0]
-            self.nTime = unpack("@Q", f.read(8))[0]
-            self.nPose = unpack("@Q", f.read(8))[0]
+            self.sizeX = unpack("<Q", f.read(8))[0]
+            self.sizeY = unpack("<Q", f.read(8))[0]
+            self.sizeZ = unpack("<Q", f.read(8))[0]
+            self.nTime = unpack("<Q", f.read(8))[0]
+            self.nPose = unpack("<Q", f.read(8))[0]
             self.dim6 = Dim6()
             self.dim6.load_binary(f)
             self.voxDim = VoxDim()
             self.voxDim.load_binary(f)
             timeArraySize: int = self.sizeY * self.nTime * self.nPose
             for _ in range(timeArraySize):
-                self.measuredTimes.append(unpack("@d", f.read(8))[0])
+                self.measuredTimes.append(unpack("<d", f.read(8))[0])
             for _ in range(timeArraySize):
-                self.theoricalTimeIndices.append(unpack("@L", f.read(4))[0])
+                self.theoricalTimeIndices.append(unpack("<L", f.read(4))[0])
             self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
             self.probeToLabsTranslations.load_binary(f)
             self.probeToLabsRotations = ProbeToLabElements(self.nPose)
             self.probeToLabsRotations.load_binary(f)
             f.seek(4, 1)
-            self.acquisitionMode = AcquisitionMode(unpack("@L", f.read(4))[0])
+            self.acquisitionMode = AcquisitionMode(unpack("<L", f.read(4))[0])
             f.seek(4, 1)
             self.probe = Probe()
             self.probe.load_binary(f)
-            depthNear = unpack("@d", f.read(8))[0]
-            depthFar = unpack("@d", f.read(8))[0]
+            depthNear = unpack("<d", f.read(8))[0]
+            depthFar = unpack("<d", f.read(8))[0]
             self.depth = Depth()
             self.depth.depthNear = depthNear
             self.depth.depthFar = depthFar
-            self.ultrafastTransmitFrequency = unpack("@d", f.read(8))[0]
-            self.pulseRepetitionFrequency = unpack("@d", f.read(8))[0]
-            self.ultrafastSamplingFrequency = unpack("@d", f.read(8))[0]
+            self.ultrafastTransmitFrequency = unpack("<d", f.read(8))[0]
+            self.pulseRepetitionFrequency = unpack("<d", f.read(8))[0]
+            self.ultrafastSamplingFrequency = unpack("<d", f.read(8))[0]
             f.seek(8, 1)
-            nPlaneWavesAngles = unpack("@L", f.read(4))[0]
+            nPlaneWavesAngles = unpack("<L", f.read(4))[0]
             for _ in range(nPlaneWavesAngles):
-                self.planeWaveAngles.append(unpack("@d", f.read(8))[0])
-            tempVal = unpack("@L", f.read(4))
+                self.planeWaveAngles.append(unpack("<d", f.read(8))[0])
+            tempVal = unpack("<L", f.read(4))
             f.seek(tempVal[0] * 24 + 8, 1)
-            self.transmitVoltage = unpack("@d", f.read(8))[0]
+            self.transmitVoltage = unpack("<d", f.read(8))[0]
             f.seek(4, 1)
-            self.delayAfterTrigger = unpack("@d", f.read(8))[0]
-            tempVal = unpack("@L", f.read(4))
+            self.delayAfterTrigger = unpack("<d", f.read(8))[0]
+            tempVal = unpack("<L", f.read(4))
             f.seek(tempVal[0] * 8, 1)
-            self.isMultiplane = unpack("@?", f.read(1))[0]
+            self.isMultiplane = unpack("<?", f.read(1))[0]
             f.seek(1, 1)
-            self.integrationWindowDuration = unpack("@d", f.read(8))[0]
-            self.sequenceName = read_string_binary(f, "@L", 4)
-            self.projectTag = read_string_binary(f, "@L", 4)
-            self.projectDescription = read_string_binary(f, "@L", 4)
-            self.subjectTag = read_string_binary(f, "@L", 4)
-            self.sessionTag = read_string_binary(f, "@L", 4)
-            self.species = read_string_binary(f, "@L", 4)
-            self.gender = GenderType(unpack("@L", f.read(4))[0])
+            self.integrationWindowDuration = unpack("<d", f.read(8))[0]
+            self.sequenceName = read_string_binary(f, "<L", 4)
+            self.projectTag = read_string_binary(f, "<L", 4)
+            self.projectDescription = read_string_binary(f, "<L", 4)
+            self.subjectTag = read_string_binary(f, "<L", 4)
+            self.sessionTag = read_string_binary(f, "<L", 4)
+            self.species = read_string_binary(f, "<L", 4)
+            self.gender = GenderType(unpack("<L", f.read(4))[0])
             self.transferDate = datetime.fromtimestamp(
-                unpack("@q", f.read(8))[0], pytz.utc
+                unpack("<q", f.read(8))[0], pytz.utc
             )
-            self.ageAtTransfer = unpack("@Q", f.read(8))[0]
-            self.subjectDescription = read_string_binary(f, "@L", 4)
-            self.weightUnit = WeightUnitType(unpack("@L", f.read(4))[0])
-            self.weight = unpack("@f", f.read(4))[0]
-            self.treatment = read_string_binary(f, "@L", 4)
-            self.scanTag = read_string_binary(f, "@L", 4)
-            self.studyType = read_string_binary(f, "@L", 4)
-            self.taskName = read_string_binary(f, "@L", 4)
-            self.taskDescription = read_string_binary(f, "@L", 4)
-            self.username = read_string_binary(f, "@L", 4)
+            self.ageAtTransfer = unpack("<Q", f.read(8))[0]
+            self.subjectDescription = read_string_binary(f, "<L", 4)
+            self.weightUnit = WeightUnitType(unpack("<L", f.read(4))[0])
+            self.weight = unpack("<f", f.read(4))[0]
+            self.treatment = read_string_binary(f, "<L", 4)
+            self.scanTag = read_string_binary(f, "<L", 4)
+            self.studyType = read_string_binary(f, "<L", 4)
+            self.taskName = read_string_binary(f, "<L", 4)
+            self.taskDescription = read_string_binary(f, "<L", 4)
+            self.username = read_string_binary(f, "<L", 4)
             for _ in range(2):
-                tempVal = unpack("@L", f.read(4))[0]
+                tempVal = unpack("<L", f.read(4))[0]
                 f.seek(tempVal, 1)
             self.acquisitionDate = datetime.fromtimestamp(
-                unpack("@q", f.read(8))[0], pytz.utc
+                unpack("<q", f.read(8))[0], pytz.utc
             )
-            self.type = ScanType(unpack("@L", f.read(4))[0])
-            toggleTimes: int = unpack("@L", f.read(4))[0]
+            self.type = ScanType(unpack("<L", f.read(4))[0])
+            toggleTimes: int = unpack("<L", f.read(4))[0]
             for _ in range(toggleTimes):
-                self.stimulationToggleTimes.append(unpack("@f", f.read(4))[0])
-            icoScanMajor = unpack("@L", f.read(4))[0]
-            icoScanMinor = unpack("@L", f.read(4))[0]
-            icoScanPatch = unpack("@L", f.read(4))[0]
+                self.stimulationToggleTimes.append(unpack("<f", f.read(4))[0])
+            icoScanMajor = unpack("<L", f.read(4))[0]
+            icoScanMinor = unpack("<L", f.read(4))[0]
+            icoScanPatch = unpack("<L", f.read(4))[0]
             self.icoScanVersion = IcoScanVersion(
                 icoScanMajor, icoScanMinor, icoScanPatch
             )
@@ -652,12 +652,12 @@ class VoxDim:
 
         None
         """
-        self.dx = unpack("@d", f.read(8))[0]
-        self.dy = unpack("@d", f.read(8))[0]
-        self.dz = unpack("@d", f.read(8))[0]
-        self.dt = unpack("@d", f.read(8))[0]
-        self.dr = unpack("@d", f.read(8))[0]
-        self.dtheta = unpack("@d", f.read(8))[0]
+        self.dx = unpack("<d", f.read(8))[0]
+        self.dy = unpack("<d", f.read(8))[0]
+        self.dz = unpack("<d", f.read(8))[0]
+        self.dt = unpack("<d", f.read(8))[0]
+        self.dr = unpack("<d", f.read(8))[0]
+        self.dtheta = unpack("<d", f.read(8))[0]
 
     def __str__(self) -> str:
         return f"\n\tdx: {self.dx}\n\tdy: {self.dy}\n\tdz: {self.dz}\n\tdt: {self.dt}\n\tdr: {self.dr}\n\tdtheta: {self.dtheta}\n"
@@ -711,17 +711,17 @@ class Dim6:
 
             None
             """
-            self.clutterFilter = self.clutterFilterType(unpack("@L", f.read(4))[0])
-            self.clutterFilterWindowDuration = unpack("@d", f.read(8))[0]
+            self.clutterFilter = self.clutterFilterType(unpack("<L", f.read(4))[0])
+            self.clutterFilterWindowDuration = unpack("<d", f.read(8))[0]
             if (
                 self.clutterFilter == self.clutterFilterType.StaticSVD
                 or self.clutterFilter == self.clutterFilterType.DynamicSVD
             ):
-                self.clutterFilterCutoffLow = unpack("@L", f.read(4))[0]
-                self.clutterFilterCutoffHigh = unpack("@L", f.read(4))[0]
+                self.clutterFilterCutoffLow = unpack("<L", f.read(4))[0]
+                self.clutterFilterCutoffHigh = unpack("<L", f.read(4))[0]
             else:
-                self.clutterFilterCutoffLow = unpack("@f", f.read(4))[0]
-                self.clutterFilterCutoffHigh = unpack("@f", f.read(4))[0]
+                self.clutterFilterCutoffLow = unpack("<f", f.read(4))[0]
+                self.clutterFilterCutoffHigh = unpack("<f", f.read(4))[0]
 
         def __str__(self) -> str:
             return (
@@ -751,8 +751,8 @@ class Dim6:
 
             None
             """
-            self.velocityMin = unpack("@f", f.read(4))[0]
-            self.velocityMax = unpack("@f", f.read(4))[0]
+            self.velocityMin = unpack("<f", f.read(4))[0]
+            self.velocityMax = unpack("<f", f.read(4))[0]
             f.seek(12, 1)
 
         def __str__(self) -> str:
@@ -779,10 +779,10 @@ class Dim6:
 
         None
         """
-        self.count = unpack("@Q", f.read(8))[0]
+        self.count = unpack("<Q", f.read(8))[0]
         dim6intents: list[int] = []
         for _ in range(self.count):
-            dim6intents.append(unpack("@L", f.read(4))[0])
+            dim6intents.append(unpack("<L", f.read(4))[0])
         for intent in dim6intents:
             if (
                 intent == self.Dim6Intent.EnhancedDoppler
@@ -883,15 +883,15 @@ class Probe:
 
         None
         """
-        self.probeType = self.ProbeType(unpack("@L", f.read(4))[0])
-        self.probeCentralFrequency = unpack("@d", f.read(8))[0]
-        self.probePitch = unpack("@d", f.read(8))[0]
-        self.probeElevationAperture = unpack("@d", f.read(8))[0]
+        self.probeType = self.ProbeType(unpack("<L", f.read(4))[0])
+        self.probeCentralFrequency = unpack("<d", f.read(8))[0]
+        self.probePitch = unpack("<d", f.read(8))[0]
+        self.probeElevationAperture = unpack("<d", f.read(8))[0]
         f.seek(8, 1)
-        self.probeRadiusOfCurvature = unpack("@d", f.read(8))[0]
-        self.probeNumberOfElements = unpack("@H", f.read(2))[0]
-        self.probeModel = read_string_binary(f, "@H", 2)
-        self.name = read_string_binary(f, "@H", 2)
+        self.probeRadiusOfCurvature = unpack("<d", f.read(8))[0]
+        self.probeNumberOfElements = unpack("<H", f.read(2))[0]
+        self.probeModel = read_string_binary(f, "<H", 2)
+        self.name = read_string_binary(f, "<H", 2)
 
     def __str__(self) -> str:
         return (
@@ -959,9 +959,9 @@ class ProbeToLabElements:
         None
         """
         for _ in range(self.matricesCount):
-            x = unpack("@d", f.read(8))[0]
-            y = unpack("@d", f.read(8))[0]
-            z = unpack("@d", f.read(8))[0]
+            x = unpack("<d", f.read(8))[0]
+            y = unpack("<d", f.read(8))[0]
+            z = unpack("<d", f.read(8))[0]
             self.matricesList.append(ProbeToLabElements.ProbeToLabMatrices(x, y, z))
 
     def __str__(self) -> str:

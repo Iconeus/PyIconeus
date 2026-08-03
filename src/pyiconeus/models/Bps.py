@@ -20,7 +20,7 @@ class Bps:
                 f.seek(12)
                 for i in range(4):
                     for j in range(4):
-                        self.data[i][j] = unpack("@d", f.read(8))[0]
+                        self.data[i][j] = unpack("<d", f.read(8))[0]
         else:
             f = h5py.File(filepath, "r")
             self.data: np.ndarray = f["BrainToLab"][:]
