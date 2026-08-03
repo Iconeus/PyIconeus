@@ -7,16 +7,16 @@ import numpy as np
 
 def test_read_raw():
     raw = read_raw(
-        "./tests/data" + "/TestULM2D_v2.raw", "./tests/data" + "/TestULM2D_v2.hraw"
+        "./tests/data" + "/2DScan_v2.raw", "./tests/data" + "/2DScan_v2.hraw"
     )
     assert isinstance(raw, pyiconeus.Raw)
 
 
 def test_raw_val():
     raw = read_raw(
-        "./tests/data" + "/TestULM2D_v2.raw", "./tests/data" + "/TestULM2D_v2.hraw"
+        "./tests/data" + "/2DScan_v2.raw", "./tests/data" + "/2DScan_v2.hraw"
     )
-    metadata: pyiconeus.Raw.MetaData = pyiconeus.Raw.MetaData("./tests/data" + "/TestULM2D_v2.hraw")
+    metadata: pyiconeus.Raw.MetaData = pyiconeus.Raw.MetaData("./tests/data" + "/2DScan_v2.hraw")
     metadata.transmitFrequency = float(decryptData(np.array([15775.125]), 1))
     metadata.prf = float(decryptData(np.array([22110072]), 2))
     metadata.speedOfSound = float(decryptData(np.array([4643172]), 3))
@@ -58,7 +58,7 @@ def test_raw_val():
     assert metadata.flatAngles[0] == raw.metadata.flatAngles[0]
     assert metadata.blockDim[0] == raw.metadata.blockDim[0]
     assert metadata.compound == raw.metadata.compound
-    assert metadata.compound == True
+    assert metadata.compound is True
     assert metadata.numberOfBlock == raw.metadata.numberOfBlock
     assert metadata.acquisitionMode == raw.metadata.acquisitionMode
     assert metadata.depth.depthFar == raw.metadata.depth.depthFar

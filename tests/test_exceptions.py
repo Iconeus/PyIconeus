@@ -14,7 +14,7 @@ def test_invalid_file_open_path():
 
 def test_invalid_file_open_path2():
     with pytest.raises(FileNotFoundError) as exception:
-        open_path("./tests/data/TestULM2D_v2.raw", "invalidfileordirectory")
+        open_path("./tests/data/2DScan_v2.raw", "invalidfileordirectory")
     assert (
         str(exception.value)
         == "[Errno 2] The following file does not exist: 'invalidfileordirectory'"
@@ -51,18 +51,18 @@ def test_fourCC_unreadable_file():
 
 def test_open_raw_missing_header():
     with pytest.raises(ValueError) as exception:
-        open_path( "./tests/data/TestULM2D_v2.raw")
+        open_path( "./tests/data/2DScan_v2.raw")
     assert exception is not None
-    assert str(exception.value) == "'./tests/data/TestULM2D_v2.raw' is a .raw file but no fileheader was provided"
+    assert str(exception.value) == "'./tests/data/2DScan_v2.raw' is a .raw file but no fileheader was provided"
 
 
 def test_open_raw_invalid_header_extention():
     with pytest.raises(ValueError) as exception:
-        open_path( "./tests/data/TestULM2D_v2.raw", "./tests/data/Mouse.bps")
+        open_path( "./tests/data/2DScan_v2.raw", "./tests/data/Mouse.bps")
     assert exception is not None
     assert str(exception.value) == "fileheader './tests/data/Mouse.bps' must end with .hraw for a .raw file"
 
 def test_raw_wrong_block_number():
     with pytest.raises(RuntimeError) as exception:
-        open_path( "./tests/data/TestULM2D_v2.raw", "./tests/data/TestULM2D_v2.hraw", 5, 3)
+        open_path( "./tests/data/2DScan_v2.raw", "./tests/data/2DScan_v2.hraw", 5, 3)
     assert str(exception.value) == "blockEnd must be greater or equal to blockStart"

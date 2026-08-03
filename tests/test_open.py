@@ -8,7 +8,7 @@ def test_open_scan_v2():
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"
     )
     assert isinstance(scan, pyiconeus.Scan)
-    scan = pyiconeus.open_path("./tests/data" + "/TestULM2D_v2.source.scan")
+    scan = pyiconeus.open_path("./tests/data" + "/2DScan_v2.source.scan")
     assert isinstance(scan, pyiconeus.Scan)
 
 
@@ -38,7 +38,7 @@ def test_open_roi_binary():
 
 def test_open_raw():
     raw = pyiconeus.open_path(
-        "./tests/data" + "/TestULM2D_v2.raw", "./tests/data" + "/TestULM2D_v2.hraw"
+        "./tests/data" + "/2DScan_v2.raw", "./tests/data" + "/2DScan_v2.hraw"
     )
     assert isinstance(raw, pyiconeus.Raw)
 

@@ -18,8 +18,8 @@ def test_scan():
     assert scan.acquisitionMode == AcquisitionMode._4DScan
 
 
-def test_scan_ULM_2D():
-    scan = Scan("./tests/data" + "/TestULM2D_v2.source.scan", True)
+def test_2D_Scan():
+    scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
     print(scan)
     assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode._2DScan
@@ -36,7 +36,7 @@ def test_scan_values():
 
 
 def test_scan_values_ULM_2D():
-    scan: Scan = Scan("./tests/data" + "/TestULM2D_v2.source.scan", True)
+    scan: Scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
     assert scan.sizeX == 128
     assert scan.sizeY == 1
     assert scan.sizeZ == 91
@@ -54,7 +54,7 @@ def test_scan_values_ULM_2D():
 
 
 def test_voxel_to_prob():
-    scan: Scan = Scan("./tests/data" + "/TestULM2D_v2.source.scan", True)
+    scan: Scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
     vTp = scan.get_VoxelToProbe()
     print("VoxelToProbeCreation")
     print(vTp)
