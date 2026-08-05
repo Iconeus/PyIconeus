@@ -66,3 +66,15 @@ def test_raw_wrong_block_number():
     with pytest.raises(RuntimeError) as exception:
         open_path( "./tests/data/2DScan_v2.raw", "./tests/data/2DScan_v2.hraw", 5, 3)
     assert str(exception.value) == "blockEnd must be greater or equal to blockStart"
+
+
+def test_3D_Scan():
+    with pytest.raises(RuntimeError) as exception:
+        open_path("./tests/data" + "/sub-Mouse001_ses-Session_2021-6-24_3Dscan_2_tomo_angio3D.source.scan")
+    assert str(exception.value) == "Could not decompose probe tforms into center, translations and rotations."
+
+def test_invalid_file_format():
+    with pytest.raises(ValueError) as exception:
+        open_path("./tests/data/" + "notAScan.txt")
+    assert str(exception.value) == "Unsupported file extension for './tests/data/notAScan.txt'"
+

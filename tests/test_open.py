@@ -1,6 +1,5 @@
 import pyiconeus
 import os
-from pytest import mark
 
 # Scan open
 def test_open_scan_v2():

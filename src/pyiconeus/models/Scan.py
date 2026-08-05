@@ -130,6 +130,8 @@ class Scan:
                 timeOriginal = acqMetaData["timeOriginal"][:]
                 self.theoricalTimeIndices = np.round((timeOriginal - dt) / dt)
                 probeToLabs = acqMetaData["probeToLab"][:]
+                if probeToLabs.ndim < 3:
+                    probeToLabs = probeToLabs.reshape((1, 4, 4))
                 self.probeToLabsTranslations = ProbeToLabElements(len(probeToLabs))
                 self.probeToLabsRotations = ProbeToLabElements(len(probeToLabs))
                 translations = np.ndarray(shape=(len(probeToLabs), 3))
@@ -147,13 +149,7 @@ class Scan:
                 self.sizeY = self.voxels.shape[1]
                 self.sizeZ = self.voxels.shape[2]
                 self.nTime = self.voxels.shape[3]
-                self.nPose = (
-                    self.voxels.shape[4] if self.voxels.ndim > 4 else 1
-                )
-                if self.voxels.ndim < 6:
-                    self.voxels = self.voxels.reshape(
-                        (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1)
-                    )
+                self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
             else:
                 (data, time, timeIndices, probeTranslation, probeRotation, dy) = (
                     consolidate_scan(f)
@@ -286,11 +282,11 @@ class Scan:
         self.probe.fill_default()
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
-        self.planeWaveAngles= np.arange(-10, 12, 2, dtype=float).tolist()
+        self.planeWaveAngles = np.arange(-10, 12, 2, dtype=float).tolist()
         if self.probe.name == "IcoPrime 4D MultiArray":
             self.planeWaveAngles = np.linspace(-12, 12, 8).tolist()
         self.transmitVoltage = 25
-        self.pulseRepetitionFrequency= len(self.planeWaveAngles) * 500
+        self.pulseRepetitionFrequency = len(self.planeWaveAngles) * 500
         self.isMultiplane = False
         self.delayAfterTrigger = 0
         self.sequenceName = "default sequence"
@@ -362,7 +358,7 @@ class Scan:
             or self.acquisitionMode == AcquisitionMode._3DscanRCA
         ):
             data = hdf5_data["Data"][:].T
-            time = hdf5_data["acqMetaData"]["theoricalTime"][:]
+            time = hdf5_data["acqMetaData"]["timeOriginal"][:]
             self.measuredTimes = np.tile(time, (data.shape[1], 1)).tolist()
             self.probe.probeType = Probe.ProbeType.RCA
             self.voxels = data

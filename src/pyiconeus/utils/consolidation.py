@@ -19,56 +19,56 @@ def _fix_multiarray_probe(
 ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]:
     """Fix data and affine transformations acquired using the multi-array probe.
 
-    The multi-array probe consists of 4 independent linear probes stacked along the
-    axial dimension and separated by 2.1 mm. However, the IcoScan acquisition software
-    outputs data with only one affine transformation per probe pose and voxel dimension
-    2.1 mm along the y-axis, resulting in very weird results when resampling the data.
+        The multi-array probe consists of 4 independent linear probes stacked along the
+        axial dimension and separated by 2.1 mm. However, the IcoScan acquisition software
+        outputs data with only one affine transformation per probe pose and voxel dimension
+        2.1 mm along the y-axis, resulting in very weird results when resampling the data.
 
-    `_fix_multiarray_probe` performs the following actions:
+        `_fix_multiarray_probe` performs the following actions:
 
-    * the data is reshaped to move all slices from the y-axis to the pose-axis;
-    * the scaling along the y-axis in `voxels2probe` is set to 400 µm;
-    * each affine in `probe2lab` is transformed into 4 affines, i.e. one for each probe.
-    * the slices are ordered by increasing translation along the y-axis.
+        * the data is reshaped to move all slices from the y-axis to the pose-axis;
+        * the scaling along the y-axis in `voxels2probe` is set to 400 µm;
+        * each affine in `probe2lab` is transformed into 4 affines, i.e. one for each probe.
+        * the slices are ordered by increasing translation along the y-axis.
 
-    In effect, this results in considering each probe in the multi-array probe as a
-    separate pose.
+        In effect, this results in considering each probe in the multi-array probe as a
+        separate pose.
 
-    Parameters
-    ----------
-    **data** : numpy.ndarray
-        Data acquired using the multi-array probe, with shape ``(x, 4, z, r, p, c, e)``.
-    **time** : numpy.ndarray
-        The time array containing acquisition timings for each probe pose.
-    **voxels2probe** : numpy.ndarray
-        The affine transformation from voxel space to probe space with shape ``(4, 4)``.
-    **probe2lab** : numpy.ndarray
-        The affine transformations from probe space to laboratory space with shape ``(p,
-        4, 4)``.
+        Parameters
+        ----------
+        **data** : numpy.ndarray
+            Data acquired using the multi-array probe, with shape ``(x, 4, z, r, p, c, e)``.
+        **time** : numpy.ndarray
+            The time array containing acquisition timings for each probe pose.
+        **voxels2probe** : numpy.ndarray
+            The affine transformation from voxel space to probe space with shape ``(4, 4)``.
+        **probe2lab** : numpy.ndarray
+            The affine transformations from probe space to laboratory space with shape ``(p,
+            4, 4)``.
 
-    Returns
-    -------
-**    data** : numpy.ndarray
-        The fixed data with shape ``(x, 1, z, r, 4 * p, c, e)``.
-    **time** : numpy.ndarray
-        The fixed `time` array, with duplicated timings for each probe of the
-        multi-array probe at each probe pose.
-    **voxels2probe** : numpy.ndarray
-        *The* fixed `voxel2probe` affine with ``voxel2probe[1, 1] == 4e-4``.
-    **probe2lab** : numpy.ndarray
-        The fixed `probe2lab` affines, with ``probe2lab.shape[0] == 4 * p``.
+        Returns
+        -------
+    **    data** : numpy.ndarray
+            The fixed data with shape ``(x, 1, z, r, 4 * p, c, e)``.
+        **time** : numpy.ndarray
+            The fixed `time` array, with duplicated timings for each probe of the
+            multi-array probe at each probe pose.
+        **voxels2probe** : numpy.ndarray
+            *The* fixed `voxel2probe` affine with ``voxel2probe[1, 1] == 4e-4``.
+        **probe2lab** : numpy.ndarray
+            The fixed `probe2lab` affines, with ``probe2lab.shape[0] == 4 * p``.
     """
     probe_range = (data.shape[1] - 1) * voxels2probe[1, 1]
     probe_slice_translations = np.linspace(
         -probe_range / 2, probe_range / 2, data.shape[1]
     )
 
-    if time.ndim == 1:
+    if time.ndim == 1:  # For Static MutliArray
         time = time[:, None]
     time = np.repeat(time, data.shape[1], axis=1)
 
     if timeOriginal is not None:
-        if timeOriginal.ndim == 1:
+        if timeOriginal.ndim == 1:  # For Static MutliArray
             timeOriginal = timeOriginal[:, None]
         timeOriginal = np.repeat(timeOriginal, data.shape[1], axis=1)
     # Each probe in the multi-array probe is considered a separate probe pose after
@@ -258,7 +258,9 @@ def _deconvolve_probe_path(
 
 def consolidate_scan(
     dataset: h5py.Group, copy: bool = True
-) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, float | None]:
+) -> tuple[
+    npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, float | None
+]:
     """Consolidate a scan acquired using regular probe poses.
 
     Using linear or multi-array probes, whole volumes are generally acquired
@@ -314,6 +316,8 @@ def consolidate_scan(
         if sorted_time_original.size > 1
         else sorted_time_original[0]
     )
+    if dt == 0:
+        dt = integrationTime
 
     timeOriginal: npt.NDArray = timeOriginalRaw.reshape((-1, n_poses))
     if n_poses == 1:
@@ -322,7 +326,7 @@ def consolidate_scan(
     probe2lab: npt.NDArray = smeta["probeToLab"][()]
     voxels2probe: npt.NDArray = smeta["voxelsToProbe"][()]
 
-    voxels2probe: npt.NDArray = _fix_voxels2probe(voxels2probe, data.shape[2])
+    voxels2probe = _fix_voxels2probe(voxels2probe, data.shape[2])
 
     # Is multiarray
     if data.shape[1] == 4 and data.ndim > 4:
@@ -332,18 +336,24 @@ def consolidate_scan(
 
     data = _transform_data_7d_to_6d(data)
 
-    
-
-
     if data.ndim < 5:
         warnings.warn(
             RuntimeWarning("consolidation warn", "Scan has only one probe pose.")
         )
-        return data, time, timeOriginal, np.array([probe2lab.T[3][:3]]), np.array([mat2euler(probe2lab)]), None
-    
-    translations, rotations, translation_to_center_tform = _deconvolve_probe_path(probe2lab)
+        return (
+            data,
+            time,
+            timeOriginal,
+            np.array([probe2lab.T[3][:3]]),
+            np.array([mat2euler(probe2lab)]),
+            None,
+        )
 
+    translations, rotations, translation_to_center_tform = _deconvolve_probe_path(
+        probe2lab
+    )
     voxDimDy = float(np.mean(np.diff(translations)))
+
     probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
     probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     for rotation_index, rotation in enumerate(rotations):
@@ -352,8 +362,10 @@ def consolidate_scan(
             + len(rotations)
         ]
         tformTranslation = translationMatrix(0, np.mean(translations), 0)
-        tformRotation = rotation_xyz(np.array([0.0, 0.0, np.radians(rotation)]))
-        translation_tform = translation_to_center_tform @ tformRotation @ tformTranslation
+        tformRotation = rotation_xyz((0.0, 0.0, np.radians(rotation)))
+        translation_tform = (
+            translation_to_center_tform @ tformRotation @ tformTranslation
+        )
         probe2labTranslation[rotation_index] = translation_tform.T[3][:3]
         probe2labRotation[rotation_index] = np.array([0.0, 0.0, np.radians(rotation)])
 
@@ -399,7 +411,7 @@ def consolidate_scan(
     if reordering_needed or copy:
         data = data[:, pose_order]
 
-    time: npt.NDArray = time[:, pose_order].copy()
+    time = time[:, pose_order].copy()
 
     timeOriginal = timeOriginal[:, pose_order].copy()
     theoretical_time_indices: npt.NDArray = np.round(
@@ -408,4 +420,11 @@ def consolidate_scan(
 
     data = squeeze_trailing(data, initial=4)
 
-    return data, time, theoretical_time_indices, probe2labTranslation, probe2labRotation, voxDimDy
+    return (
+        data,
+        time,
+        theoretical_time_indices,
+        probe2labTranslation,
+        -probe2labRotation,
+        voxDimDy,
+    )

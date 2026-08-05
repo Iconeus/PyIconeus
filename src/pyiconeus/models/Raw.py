@@ -17,6 +17,7 @@ class Raw:
     **data**: np.ndarray
         The raw data of the acquisition
     """
+
     class MetaData:
         """
         Metadata of the raw acquisition
@@ -63,6 +64,7 @@ class Raw:
         **acquisitionMode**: *str*
             Type of acquisition
         """
+
         def __init__(self, fileheader) -> None:
             with h5py.File(fileheader, "r") as h5:
                 self.transmitFrequency: float = float(decryptData(h5["F1"], 1)[0])
@@ -101,8 +103,13 @@ class Raw:
                 f.seek(sizeToSkip, 1)
             if blockEnd < blockStart:
                 raise RuntimeError("blockEnd must be greater or equal to blockStart")
-            if (blockEnd > self.metadata.numberOfBlock):
-                warnings.warn(RuntimeWarning("Raw init", "Passed blockEnd argument was greater than the total number of block. Automatically set to numberOfBlock"))
+            if blockEnd > self.metadata.numberOfBlock:
+                warnings.warn(
+                    RuntimeWarning(
+                        "Raw init",
+                        "Passed blockEnd argument was greater than the total number of block. Automatically set to numberOfBlock",
+                    )
+                )
             blockEnd: int = min(blockEnd, self.metadata.numberOfBlock)
             nBlockToRead = blockEnd - nBlockToSkip
 

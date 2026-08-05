@@ -31,7 +31,7 @@ def hdf5_string_reader(hdf5_dataset: h5py.Dataset) -> str:
     else:
         # HDF5 ASCII strings
         bytes_data = hdf5_dataset[()][:]
-        strings = str(bytes_data, 'utf-8')
+        strings = str(bytes_data, "utf-8")
     return strings
 
 
@@ -156,7 +156,7 @@ def decryptData(value: np.ndarray, n: int) -> np.ndarray:
         nbrc = np.asarray(value, dtype=float)
     nbr: np.ndarray = nbrc.copy()
     if nbrc.ndim < 3:
-        nbr: np.ndarray = (nbrc - 72) / (1005 * n)
+        nbr = (nbrc - 72) / (1005 * n)
     return nbr
 
 
@@ -205,15 +205,15 @@ def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDA
     return points @ tform[:3, :3].T + tform[:3, 3]
 
 
-def rotation_xyz( theta: tuple[float, float, float] ):
+def rotation_xyz(theta: tuple[float, float, float]):
     """
     Create a rotation matrix in xyz order using 'theta'
 
     Parameters
     ----------
 
-    **theta**: float
-        The degree of rotation in radians
+    **theta**: tuple[float, float, float]
+        The euler angles of a rotation in radians
 
     Returns
     -------
@@ -222,16 +222,19 @@ def rotation_xyz( theta: tuple[float, float, float] ):
         The 4x4 rotation matrix
     """
     cx, cy, cz = np.cos(theta)
-    sx,sy,sz = np.sin(theta)
-    return np.array([
-        [cy*cz, -cx*sz + cz*sx*sy, cx*cz*sy + sx*sz, 0],
-        [cy*sz,  cx*cz + sx*sy*sz, cx*sy*sz - cz*sx, 0],
-        [  -sy,             cy*sx,            cx*cy, 0],
-        [    0,                 0,                0, 1]
-    ],dtype=float)
+    sx, sy, sz = np.sin(theta)
+    return np.array(
+        [
+            [cy * cz, -cx * sz + cz * sx * sy, cx * cz * sy + sx * sz, 0],
+            [cy * sz, cx * cz + sx * sy * sz, cx * sy * sz - cz * sx, 0],
+            [-sy, cy * sx, cx * cy, 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
 
 
-def inverse_rotation_xyz( M ):
+def inverse_rotation_xyz(M):
     """
     Computes the vector of euler angles from a rotation matrix
 
@@ -247,21 +250,22 @@ def inverse_rotation_xyz( M ):
     np.ndarray: (x, y, z)
         Vector of euler angles
     """
-    if np.abs(M[2,0]) > 1.0:
-        sy = -np.sign(M[2,0])
-        y0 = sy*np.pi/2
+    if M[2, 0] <= -1.0 + 1e-5:
+        y0 = np.pi / 2
+        z0 = 0.0
+        x0 = np.arctan2(M[0, 1], M[0, 2])
+        return np.array((x0, y0, z0))
 
-        # arbitrarily set z=0
-        z0 = 0 # so sz=0, cz=1
-
-        # compute x = arctan2( M[0,1]/sy, M[02]/sy )
-        x0 = np.arctan2( M[0,1]/sy, M[0,2]/sy )
-        return np.array((x0,y0,z0))
+    elif M[2, 0] >= 1.0 - 1e-5:
+        y0 = -np.pi / 2
+        z0 = 0.0
+        x0 = np.arctan2(-M[0, 1], -M[0, 2])
+        return np.array((x0, y0, z0))
     else:
-        y0 = np.arcsin( -M[2,0] )
+        y0 = np.arcsin(-M[2, 0])
         c0 = np.cos(y0)
 
-        x0 = np.arctan2( M[2,1]/c0, M[2,2]/c0 )
+        x0 = np.arctan2(M[2, 1] / c0, M[2, 2] / c0)
 
-        z0 = np.arctan2( M[1,0]/c0, M[0,0]/c0 )
-        return np.array((x0,y0,z0))
+        z0 = np.arctan2(M[1, 0] / c0, M[0, 0] / c0)
+        return np.array((x0, y0, z0))

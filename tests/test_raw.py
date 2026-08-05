@@ -1,19 +1,20 @@
 import pyiconeus
+from pytest import mark
 from pyiconeus.utils.utils import decryptData
-from pyiconeus.io.base import read_raw
+from pyiconeus import Raw
 from pyiconeus.models.Scan import Depth, VoxDim
 import numpy as np
 
 
 def test_read_raw():
-    raw = read_raw(
+    raw = Raw(
         "./tests/data" + "/2DScan_v2.raw", "./tests/data" + "/2DScan_v2.hraw"
     )
     assert isinstance(raw, pyiconeus.Raw)
 
 
 def test_raw_val():
-    raw = read_raw(
+    raw = Raw(
         "./tests/data" + "/2DScan_v2.raw", "./tests/data" + "/2DScan_v2.hraw"
     )
     metadata: pyiconeus.Raw.MetaData = pyiconeus.Raw.MetaData("./tests/data" + "/2DScan_v2.hraw")
@@ -66,3 +67,10 @@ def test_raw_val():
     assert metadata.voxDim.dx == raw.metadata.voxDim.dx
     assert metadata.voxDim.dy == raw.metadata.voxDim.dy
     assert metadata.voxDim.dz == raw.metadata.voxDim.dz
+
+
+@mark.filterwarnings("ignore::RuntimeWarning")
+def test_invalid_blockEnd():
+    raw = Raw("./tests/data/" + "2DScan_v2.raw", "./tests/data/" + "2DScan_v2.hraw", 1, 100)
+    assert raw.metadata.numberOfBlock == 9
+    assert raw.data.shape[3] == 9

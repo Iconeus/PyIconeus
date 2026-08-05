@@ -2,6 +2,7 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/pyiconeus.svg)](https://pypi.org/project/pyiconeus)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyiconeus.svg)](https://pypi.org/project/pyiconeus)
+[![PyPI - Numpy Version](https://img.shields.io/pypi/pyversions/numpy.svg)](https://pypi.org/project/numpy)
 
 **PyIconeus** is the official IO python package from Iconeus. Its purpose is to give an easy to use, open-source library for reading and using the Iconeus official formats.
 PyIconeus handles the following file formats:

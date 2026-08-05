@@ -24,6 +24,7 @@ class Roi:
     faces: np.ndarray (N, 3)
         Each row contains the indices of the vertices composing a triangle of the volume
     """
+
     def __init__(self, filepath, is_binary: bool):
         self.list: list[RoiElements] = []
         if is_binary:
@@ -66,7 +67,7 @@ class Roi:
                         float(roiElement["color"][0][2]) / 255,
                     )
                     faces: np.ndarray = roiElement["faces"][:]
-                    faces = faces - 1 #Fix the MATLAB 1-indexing
+                    faces = faces - 1  # Fix the MATLAB 1-indexing
                     vertices: np.ndarray = roiElement["vertices"][:]
                     self.list.append(RoiElements(color, vertices, faces, name))
 
@@ -77,7 +78,6 @@ class Roi:
         return ret
 
     __repr__ = __str__
-    
 
 
 class RoiColor:

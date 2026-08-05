@@ -13,6 +13,7 @@ class Bps:
     data: np.ndarray (4, 4)
         The affine matrix
     """
+
     def __init__(self, filepath: str, is_binary: bool = False) -> None:
         if is_binary:
             with open(filepath, "rb") as f:

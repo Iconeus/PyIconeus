@@ -1,4 +1,5 @@
 import numpy as np
+from pytest import mark
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
 from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType, Probe, Dim6
 
@@ -18,13 +19,23 @@ def test_scan():
     assert scan.acquisitionMode == AcquisitionMode._4DScan
 
 
+@mark.filterwarnings("ignore::RuntimeWarning")
 def test_2D_Scan():
     scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
     print(scan)
     assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode._2DScan
     assert scan.sizeY == 1
+    scan = Scan("./tests/data" + "/2DScan.source.scan", False)
+    print(scan)
+    assert isinstance(scan, Scan)
+    assert scan.acquisitionMode == AcquisitionMode._2DScan
+    assert scan.sizeY == 1
 
+def test_3D_Scan():
+    scan = Scan("./tests/data/" + "sub-souris1_ses-Session_2021-3-9_Angio3Dscan_angio3D.source.scan", False)
+    assert isinstance(scan, Scan)
+    assert scan.acquisitionMode == AcquisitionMode._3DScan
 
 def test_scan_values():
     scan = Scan(
@@ -103,6 +114,15 @@ def test_compare_v1_v2_scanmetaData():
     assert scanv1.icoScanVersion.minor == scanv2.icoScanVersion.minor
     assert scanv1.icoScanVersion.patch == scanv2.icoScanVersion.patch
 
+def test_compare_matrices():
+    scanv1: Scan = Scan("./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False)
+    scanv2: Scan = Scan("./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan", True)
+
+    assert isinstance(scanv1, Scan)
+    assert isinstance(scanv2, Scan)
+    ptl1 = scanv1.get_ProbeToLab()[0]
+    ptl2 = scanv2.get_ProbeToLab()[0]
+    assert np.allclose(ptl1, ptl2)
 
 def test_compare_acqMetaData():
     scanv1: Scan = Scan(
@@ -169,6 +189,10 @@ def test_RCA_loading():
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
     assert scan.probe.name == "IcoPrime"
+    scan = Scan("./tests/data/" + "RCA_4Dscan_2_fus3D.source.scan", False)
+    assert isinstance(scan, Scan)
+    assert scan.probe.probeType == Probe.ProbeType.RCA
+    assert scan.acquisitionMode == AcquisitionMode._4DscanRCA
 
 if __name__ == '__main__':
-    test_4DCustomScan()
+    test_RCA_loading()

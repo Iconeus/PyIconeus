@@ -1,6 +1,6 @@
 import urllib.request, zipfile, os
 
-ZENODO_URL = "https://zenodo.org/records/21700212/files/data.zip"
+ZENODO_URL = "https://zenodo.org/records/21807850/files/data.zip"
 
 def download_test_data(dest="tests/data"):
     if os.path.exists(dest):
