@@ -38,6 +38,14 @@ Or from the sources:
 Check the installation
 ------------------------
 
+Download the test data by running the download script (~3Gb):
+
+.. code-block:: console
+
+   python download_script.py
+
+Run the tests:
+
 .. code-block:: console
 
    pytest

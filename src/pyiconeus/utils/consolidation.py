@@ -109,10 +109,10 @@ def _fix_multiarray_probe(
 
 
 def _fix_voxels2probe(voxels2probe: npt.NDArray, data_shape_z: int) -> npt.NDArray:
-    """Fix a `voxels2probe` affine transformation for use in PyfUS.
+    """Fix a `voxels2probe` affine transformation for use in PyIconeus.
 
     The `voxels2probe` affine transformation used by Iconeus software needs to be
-    modified in several ways before being used in PyfUS:
+    modified in several ways before being used in PyIconeus:
 
     * To avoid using indirect coordinate systems, the scan data is flipped along the
       *z*-axis. This flip needs to be accounted for by inverting the sign of the
@@ -145,7 +145,7 @@ def _fix_voxels2probe(voxels2probe: npt.NDArray, data_shape_z: int) -> npt.NDArr
     for i in range(3):
         voxels2probe[i, 3] += voxels2probe[i, i]
 
-    # PyfUS flips data from SCAN files along the z-axis to get closer to an RAS+
+    # PyIconeus flips data from SCAN files along the z-axis to get closer to an RAS+
     # oriented volume.
     voxels2probe[2, 2] *= -1
     voxels2probe[2, 3] -= (data_shape_z - 1) * voxels2probe[2, 2]
@@ -165,7 +165,7 @@ def _transform_data_7d_to_6d(data: npt.NDArray) -> npt.NDArray:
     - ``c``: number of cycles of probe poses;
     - ``e``: extra dimension, e.g. for statistics.
 
-    The 6D data format used by PyfUS has shape ``(x, y, z, t, p, e)``:
+    The 6D data format used by PyIconeus has shape ``(x, y, z, t, p, e)``:
 
     - ``(x, y, z)``: spatial dimensions;
     - ``t``: time;
@@ -257,7 +257,7 @@ def _deconvolve_probe_path(
 
 
 def consolidate_scan(
-    dataset: h5py.Group, copy: bool = True
+    dataset: h5py.Group,
 ) -> tuple[
     npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray, float | None
 ]:
@@ -279,16 +279,12 @@ def consolidate_scan(
     possible and poses are thus kept separate in the `p`-axis.
 
     .. note::
-        Consolidation will be performed using the `qform` affine. Probe poses will be
-        reordered according to increasing *y*-axis translations.
+        Probe poses will be reordered according to increasing *y*-axis translations.
 
     Parameters
     ----------
-    **scan** : pyfus.scan.Scan
+    **scan** : PyIconeus.scan.Scan
         A scan to be consolidated.
-    **copy** : bool, optional
-        Whether or not the consolidated scan data is copied. Note that when poses are
-        reordered, a copy is always performed. Default is ``True``.
 
     Returns
     -------
@@ -308,7 +304,7 @@ def consolidate_scan(
         time = time[:, 0]
 
     timeOriginalRaw: npt.NDArray = smeta["timeOriginal"][()]
-    integrationTime: float = smeta["voxDim"]["dt"][()][0][0]  # ty:ignore[invalid-assignment]
+    integrationTime: float = smeta["voxDim"]["dt"][()][0][0]
 
     sorted_time_original: npt.NDArray = np.sort(timeOriginalRaw, axis=None)
     dt: float = (
@@ -330,7 +326,7 @@ def consolidate_scan(
 
     # Is multiarray
     if data.shape[1] == 4 and data.ndim > 4:
-        data, time, voxels2probe, probe2lab, timeOriginal = _fix_multiarray_probe(
+        data, time, _, probe2lab, timeOriginal = _fix_multiarray_probe(
             data, time, voxels2probe, probe2lab, timeOriginal
         )
 
@@ -357,7 +353,7 @@ def consolidate_scan(
     probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
     probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     for rotation_index, rotation in enumerate(rotations):
-        translation_same_rotation = probe2lab[
+        probe2lab[
             rotation_index * len(rotations) : rotation_index * len(rotations)
             + len(rotations)
         ]
@@ -408,7 +404,7 @@ def consolidate_scan(
     # Reordering by fancy indexing using the pose_order array will always lead to a
     # copy.
     reordering_needed: bool = not all(pose_order == np.arange(len(translations)))
-    if reordering_needed or copy:
+    if reordering_needed:
         data = data[:, pose_order]
 
     time = time[:, pose_order].copy()

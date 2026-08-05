@@ -171,6 +171,7 @@ dx, dy, dz : float
 
 dt : float
     Time in seconds at the end of the acquisition of the first block of the first probe position including the pause. This is not necessarily volumetric dt
+
 dr : float
     Voxel angle in radians
 
@@ -238,14 +239,11 @@ ClutterFiltering
 ++++++++++++++++++
 
 clutterFilter : clutterFilterType (``StaticSVD`` | ``DynamicSVD`` | ``Butterworth``)
-    *(TODO - describe each filter type.)*
 
 clutterFilterWindowDuration : float
-    *(TODO - specify the unit.)*
+    Duration of the filter in seconds
 
 clutterFilterCutoffLow, clutterFilterCutoffHigh : float
-    *(TODO - specify the unit; note that the type differs depending on the
-    filter: int for SVD-based filters, float for Butterworth.)*
 
 VelocityBandwidthFiltering
 ++++++++++++++++++++++++++++
@@ -295,7 +293,6 @@ ScanType
 +++++++++
 
 ``Source``, ``Proc``
-Source scans are coming directly out of icoScan.
 Proc scans are processed scans.
 
 AcquisitionMode
