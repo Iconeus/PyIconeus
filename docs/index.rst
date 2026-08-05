@@ -24,6 +24,9 @@ PyIconeus handles the following file formats:
    :caption: File formats
 
    scan_format
+   bps_format
+   roi_format
+   raw_format
 
 .. toctree::
    :maxdepth: 2
