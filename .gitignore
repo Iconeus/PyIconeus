@@ -5,4 +5,4 @@ temp.py
 tests/data.zip
 .vscode
 docs/_autosummary
-docs
+docs/_build
