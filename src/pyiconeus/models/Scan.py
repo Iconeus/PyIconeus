@@ -2,7 +2,6 @@ from io import BufferedReader
 import h5py
 import pytz
 import numpy as np
-from typing import Literal
 from struct import unpack
 from datetime import datetime
 from enum import IntEnum
@@ -45,8 +44,8 @@ class Scan:
         self.nPose: int
         self.measuredTimes: list[float] = []
         self.theoricalTimeIndices: list[int] = []
-        self.probeToLabsTranslations: ProbeToLabElements
-        self.probeToLabsRotations: ProbeToLabElements
+        self.probeToLabsTranslations: np.ndarray
+        self.probeToLabsRotations: np.ndarray
         self.dim6: Dim6
         self.voxDim: VoxDim
         self.acquisitionMode: AcquisitionMode
@@ -126,14 +125,15 @@ class Scan:
             dt = float(tmp[1][0] - tmp[0][0])
             dy: float | None = float(acqMetaData["voxDim"]["dy"][0][0])
             if not self.canBeConsolidated(f):
+                self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
+                self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
+                self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
                 self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
                 timeOriginal = acqMetaData["timeOriginal"][:]
                 self.theoricalTimeIndices = np.round((timeOriginal - dt) / dt)
                 probeToLabs = acqMetaData["probeToLab"][:]
                 if probeToLabs.ndim < 3:
                     probeToLabs = probeToLabs.reshape((1, 4, 4))
-                self.probeToLabsTranslations = ProbeToLabElements(len(probeToLabs))
-                self.probeToLabsRotations = ProbeToLabElements(len(probeToLabs))
                 translations = np.ndarray(shape=(len(probeToLabs), 3))
                 rotations = np.ndarray(shape=(len(probeToLabs), 3))
                 for i in range(len(probeToLabs)):
@@ -143,13 +143,12 @@ class Scan:
                     eul = inverse_rotation_xyz(tform)
                     rotations[i] = eul
                     translations[i] = tr
-                    self.probeToLabsTranslations.setProbe2LabTransform(translations)
-                    self.probeToLabsRotations.setProbe2LabTransform(rotations)
+                self.probeToLabsTranslations = translations
+                self.probeToLabsRotations = rotations
                 self.sizeX = self.voxels.shape[0]
                 self.sizeY = self.voxels.shape[1]
                 self.sizeZ = self.voxels.shape[2]
                 self.nTime = self.voxels.shape[3]
-                self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
             else:
                 (data, time, timeIndices, probeTranslation, probeRotation, dy) = (
                     consolidate_scan(f)
@@ -163,10 +162,10 @@ class Scan:
                     data = data.reshape(
                         (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1)
                     )
-                self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
-                self.probeToLabsTranslations.setProbe2LabTransform(probeTranslation)
-                self.probeToLabsRotations = ProbeToLabElements(self.nPose)
-                self.probeToLabsRotations.setProbe2LabTransform(probeRotation)
+                self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
+                self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
+                self.probeToLabsTranslations = probeTranslation
+                self.probeToLabsRotations = probeRotation
                 self.measuredTimes = time.reshape(-1).tolist()
                 self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
                 self.voxels = data
@@ -425,10 +424,18 @@ class Scan:
                 self.measuredTimes.append(unpack("<d", f.read(8))[0])
             for _ in range(timeArraySize):
                 self.theoricalTimeIndices.append(unpack("<L", f.read(4))[0])
-            self.probeToLabsTranslations = ProbeToLabElements(self.nPose)
-            self.probeToLabsTranslations.load_binary(f)
-            self.probeToLabsRotations = ProbeToLabElements(self.nPose)
-            self.probeToLabsRotations.load_binary(f)
+                self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
+                self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
+            for i in range(self.nPose):
+                x = unpack("<d", f.read(8))[0]
+                y = unpack("<d", f.read(8))[0]
+                z = unpack("<d", f.read(8))[0]
+                self.probeToLabsTranslations[i] = [x, y, z]
+            for i in range(self.nPose):
+                x = unpack("<d", f.read(8))[0]
+                y = unpack("<d", f.read(8))[0]
+                z = unpack("<d", f.read(8))[0]
+                self.probeToLabsRotations[i] = [x, y, z]
             f.seek(4, 1)
             self.acquisitionMode = AcquisitionMode(unpack("<L", f.read(4))[0])
             f.seek(4, 1)
@@ -558,16 +565,16 @@ class Scan:
             list of affine matrix, one per rotation
         """
         rep = []
-        for i in range(self.probeToLabsRotations.matricesCount):
+        for i in range(len(self.probeToLabsRotations)):
             rot = (
-                self.probeToLabsRotations.matricesList[i].x,
-                self.probeToLabsRotations.matricesList[i].y,
-                self.probeToLabsRotations.matricesList[i].z,
+                self.probeToLabsRotations[i][0],
+                self.probeToLabsRotations[i][1],
+                self.probeToLabsRotations[i][2],
             )
             Rm = rotation_xyz(rot)
-            Rm.T[3][0] = self.probeToLabsTranslations.matricesList[i].x
-            Rm.T[3][1] = self.probeToLabsTranslations.matricesList[i].y
-            Rm.T[3][2] = self.probeToLabsTranslations.matricesList[i].z
+            Rm.T[3][0] = self.probeToLabsTranslations[i][0]
+            Rm.T[3][1] = self.probeToLabsTranslations[i][1]
+            Rm.T[3][2] = self.probeToLabsTranslations[i][2]
             rep.append(Rm)
         return rep
 
@@ -903,73 +910,6 @@ class Probe:
         )
 
     __repr__ = __str__
-
-
-class ProbeToLabElements:
-    class ProbeToLabMatrices:
-        def __init__(self, x: float, y: float, z: float) -> None:
-            self.x = x
-            self.y = y
-            self.z = z
-
-        def __str__(self) -> str:
-            return f"\n\t\tx: {self.x}\n\t\ty: {self.y}\n\t\tz: {self.z}"
-
-        __repr__ = __str__
-
-    def __init__(self, matricesCount) -> None:
-        self.matricesCount: int = matricesCount
-        self.matricesList: list[ProbeToLabElements.ProbeToLabMatrices] = []
-
-    def setProbe2LabTransform(self, transform: np.ndarray) -> None:
-        """
-        Set the given transform vector as the A ProbeToLab element (for HDF5 reader)
-
-        Parameters
-        ----------
-
-        **transform**: np.ndarray
-            The vector of 3 element of the translation/rotation matrix components
-
-        Returns
-        -------
-
-        None
-        """
-        for t in transform:
-            self.matricesList.append(
-                self.ProbeToLabMatrices(float(t[0]), float(t[1]), float(t[2]))
-            )
-
-    def load_binary(self, f: BufferedReader) -> None:
-        """
-        Reads the ProbeToLab Translation/Rotation from the binary stream
-
-        Parameters
-        ----------
-
-        **f**: BufferedReader
-            The Binary stream
-
-        Returns
-        -------
-
-        None
-        """
-        for _ in range(self.matricesCount):
-            x = unpack("<d", f.read(8))[0]
-            y = unpack("<d", f.read(8))[0]
-            z = unpack("<d", f.read(8))[0]
-            self.matricesList.append(ProbeToLabElements.ProbeToLabMatrices(x, y, z))
-
-    def __str__(self) -> str:
-        rep = f"{self.matricesCount}"
-        for i in range(len(self.matricesList)):
-            rep += f"\n\t{i}: {self.matricesList[i]}"
-        return rep
-
-    __repr__ = __str__
-
 
 class Depth:
     def __init__(self) -> None:

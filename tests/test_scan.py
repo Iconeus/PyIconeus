@@ -1,7 +1,7 @@
 import numpy as np
 from pytest import mark
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
-from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType, Probe, Dim6
+from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType, Probe
 
 
 def test_check_fourCC():
@@ -156,7 +156,7 @@ def test_4DCustomScan():
     scan: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.scan", False)
     scanv2: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.v2.scan", True)
     assert isinstance(scan, Scan)
-    assert scan.probeToLabsTranslations.matricesCount == 3
+    assert scan.probeToLabsTranslations.shape[0] == 3
     assert scan.sizeX == 128
     assert scan.nTime == 572
     assert scan.nPose == 3
@@ -195,4 +195,4 @@ def test_RCA_loading():
     assert scan.acquisitionMode == AcquisitionMode._4DscanRCA
 
 if __name__ == '__main__':
-    test_RCA_loading()
+    test_compare_matrices()
