@@ -1,8 +1,6 @@
-from operator import inv
 import h5py
 import numpy as np
 from pyiconeus.utils.utils import hdf5_printer, rotation_xyz, inverse_rotation_xyz
-from pyiconeus import open_path
 
 
 def test_hdf5_printer():

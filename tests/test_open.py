@@ -1,5 +1,4 @@
 import pyiconeus
-import os
 
 # Scan open
 def test_open_scan_v2():
