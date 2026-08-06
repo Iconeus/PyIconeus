@@ -1,8 +1,9 @@
 # PyIconeus
 
-[![PyPI - Version](https://img.shields.io/pypi/v/pyiconeus.svg)](https://pypi.org/project/pyiconeus)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyiconeus.svg)](https://pypi.org/project/pyiconeus)
-[![PyPI - Numpy Version](https://img.shields.io/pypi/pyversions/numpy.svg)](https://pypi.org/project/numpy)
+[![NumPy](https://img.shields.io/badge/NumPy-4DABCF?logo=numpy&logoColor=fff)]()
+[![Pytest](https://img.shields.io/badge/Pytest-fff?logo=pytest&logoColor=000)](#)
+[![PyIconeus](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml/badge.svg?branch=main)](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21807850.svg)](https://doi.org/10.5281/zenodo.21807850)
 
 **PyIconeus** is the official IO python package from Iconeus. Its purpose is to give an easy to use, open-source library for reading and using the Iconeus official formats.
 PyIconeus handles the following file formats:
