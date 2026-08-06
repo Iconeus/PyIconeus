@@ -49,7 +49,7 @@ class Roi:
                         triangles[i][0] = unpack("<L", f.read(4))[0]
                         triangles[i][1] = unpack("<L", f.read(4))[0]
                         triangles[i][2] = unpack("<L", f.read(4))[0]
-                    color: RoiColor = RoiColor(
+                    color: tuple[float, float, float] = (
                         float(unpack("<f", f.read(4))[0]),
                         float(unpack("<f", f.read(4))[0]),
                         float(unpack("<f", f.read(4))[0]),
@@ -61,7 +61,7 @@ class Roi:
                 for roiElementName in f["ROI"]:
                     roiElement: h5py.Dataset = f["ROI"][roiElementName]
                     name: str = hdf5_string_reader(roiElement["label"])
-                    color: RoiColor = RoiColor(
+                    color: tuple[float, float, float] = (
                         float(roiElement["color"][0][0]) / 255,
                         float(roiElement["color"][0][1]) / 255,
                         float(roiElement["color"][0][2]) / 255,
@@ -80,26 +80,14 @@ class Roi:
     __repr__ = __str__
 
 
-class RoiColor:
-    def __init__(self, r: float, g: float, b: float):
-        self.r: float = r
-        self.g: float = g
-        self.b: float = b
-
-    def __str__(self) -> str:
-        return f"R: {self.r}, G: {self.g}, B: {self.b}"
-
-    __repr__ = __str__
-
-
 class RoiElements:
     def __init__(
-        self, color: RoiColor, vertices: np.ndarray, faces: np.ndarray, name: str
+        self, color: tuple[float, float, float], vertices: np.ndarray, faces: np.ndarray, name: str
     ):
         self.name: str = name
         self.vertices: np.ndarray = vertices
         self.faces: np.ndarray = faces
-        self.color: RoiColor = color
+        self.color: tuple[float, float, float] = color
 
     def __str__(self):
         return f"{self.name}:\n\tColor: {self.color}\n\tVertices Count: {len(self.vertices)}\n\tFaces count: {len(self.faces)}\n"
