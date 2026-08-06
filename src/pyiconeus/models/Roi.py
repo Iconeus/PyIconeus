@@ -61,14 +61,14 @@ class Roi:
                 for roiElementName in f["ROI"]:
                     roiElement: h5py.Dataset = f["ROI"][roiElementName]
                     name: str = hdf5_string_reader(roiElement["label"])
-                    color: tuple[float, float, float] = (
+                    color = (
                         float(roiElement["color"][0][0]) / 255,
                         float(roiElement["color"][0][1]) / 255,
                         float(roiElement["color"][0][2]) / 255,
                     )
                     faces: np.ndarray = roiElement["faces"][:]
                     faces = faces - 1  # Fix the MATLAB 1-indexing
-                    vertices: np.ndarray = roiElement["vertices"][:]
+                    vertices = roiElement["vertices"][:]
                     self.list.append(RoiElements(color, vertices, faces, name))
 
     def __str__(self):
