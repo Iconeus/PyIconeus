@@ -160,30 +160,6 @@ def decryptData(value: np.ndarray, n: int) -> np.ndarray:
     return nbr
 
 
-def squeeze_trailing(arr: npt.NDArray, initial: int = 0) -> npt.NDArray:
-    """Squeeze trailing unitary dimensions.
-
-    Parameters
-    ----------
-    **arr** : numpy.ndarray
-        Array to squeeze trailing unitary dimensions from.
-    **initial** : int, optional
-        Axes up to index `initial` (not included) will not be squeezed even if they're
-        trailing unitary. Default is 0.
-
-    Returns
-    -------
-    numpy.ndarray
-        The squeezed array.
-    """
-    non_unitary_dims = (np.asarray(arr.shape) != 1).nonzero()[0]
-    last_non_unitary_dim = non_unitary_dims[-1] if non_unitary_dims.size > 0 else 0
-    new_shape = arr.shape[:initial] + arr.shape[initial : (last_non_unitary_dim + 1)]
-
-    arr.reshape(new_shape)
-    return arr
-
-
 def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDArray:
     """Applies a affine transform to 3D-points
 

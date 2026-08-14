@@ -7,7 +7,7 @@ import h5py
 import numpy.typing as npt
 from transforms3d.euler import euler2mat, mat2euler
 
-from .utils import squeeze_trailing, rotation_xyz, translationMatrix
+from .utils import rotation_xyz, translationMatrix
 
 
 def _fix_multiarray_probe(
@@ -413,8 +413,6 @@ def consolidate_scan(
     theoretical_time_indices: npt.NDArray = np.round(
         (timeOriginal - integrationTime) / dt
     )
-
-    data = squeeze_trailing(data, initial=4)
 
     return (
         data,

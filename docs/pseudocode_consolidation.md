@@ -86,11 +86,7 @@ OUTPUT : (consolidated_data, consolidated_time, translation and rotation matrice
 
 17. time ← time[:, pose_order].copy()   # same reordering applied to time
 
-18. data ← SQUEEZE_TRAILING(data, initial=4)
-    # removes trailing size-1 axes, while keeping
-    # at least the 3 spatial dimensions (x, y, z)
-
-19. RETURN (data, time, timeIndices, translations, rotations, voxDimDy)
+18. RETURN (data, time, timeIndices, translations, rotations, voxDimDy)
 ```
 
 ---
