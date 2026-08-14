@@ -10,8 +10,26 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  prepare-data:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+    - name: Download test datas
+      run: python download_script.py
+    
+    - name: Upload test datas
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-data-artifact
+        path: tests/data/
+        retention-days: 1
 
+  build:
+    needs: prepare-data
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -20,13 +38,20 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Download test datas artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: test-data-artifact
+        path: tests/data/
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
+        
     - name: Install Hatch
       run: pipx install hatch
-    - name: Download test datas
-      run: python download_script.py
+      
     - name: Run test
       run: hatch test
