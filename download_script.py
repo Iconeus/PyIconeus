@@ -1,15 +1,67 @@
-import urllib.request, zipfile, os
+import urllib.request
+import zipfile
+import os
+import hashlib
+import requests
 
-ZENODO_URL = "https://zenodo.org/records/21807850/files/data.zip"
+RECORD_ID = "21807850"  
+FILENAME = "data.zip"
+DESTINATION = "tests/data"
+LOCAL_PATH = "./data.zip"
 
-def download_test_data(dest="tests/data"):
+def get_zenodo_md5(record_id, filename):
+    url = f"https://zenodo.org/api/records/{record_id}"
+    response = requests.get(url)
+    response.raise_for_status()
+    
+    files = response.json().get('files', [])
+    for file_info in files:
+        if file_info.get('key') == filename:
+            checksum = file_info.get('checksum', '')
+            if checksum.startswith('md5:'):
+                return checksum.split('md5:')[1]
+    return None
+
+def calculate_local_md5(filepath, chunk_size=8192):
+    md5_hash = hashlib.md5()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(chunk_size), b""):
+            md5_hash.update(chunk)
+    return md5_hash.hexdigest()
+
+def verify_file(record_id, filepath, filename):
+
+    expected_md5 = get_zenodo_md5(record_id, filename)
+    
+    if not expected_md5:
+        print(f"Error : Unable to open '{filename}' in record {record_id}.")
+        return False
+        
+    local_md5 = calculate_local_md5(filepath)
+    
+    print(f"MD5 Zenodo : {expected_md5}")
+    print(f"MD5 Local  : {local_md5}")
+    
+    if local_md5.lower() == expected_md5.lower():
+        print("Sucess")
+        return True
+    else:
+        print("Error : checksums doesn't match")
+        return False
+
+
+def download_test_data(dest: str, record_id: str, filename: str):
     if os.path.exists(dest):
         return
     print("Downloading test data...")
-    urllib.request.urlretrieve(ZENODO_URL, "data.zip")
-    with zipfile.ZipFile("data.zip") as z:
+    url = f"https://zenodo.org/records/{record_id}/files/{filename}"
+    print(url)
+    urllib.request.urlretrieve(url, filename)
+    with zipfile.ZipFile(filename) as z:
         z.extractall("tests")
-    os.remove("data.zip")
 
 if __name__ == '__main__':
-    download_test_data()
+    download_test_data(DESTINATION, RECORD_ID, FILENAME)
+    print("Checksum check...")
+    if verify_file(RECORD_ID, LOCAL_PATH, FILENAME):
+        os.remove(FILENAME)
