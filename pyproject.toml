@@ -11,13 +11,11 @@ requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 authors = [
-  { name = "simoncampredon-lang", email = "simon.campredon@iconeus.com" },
+  { name = "Iconeus" },
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -29,13 +27,17 @@ dependencies = [
 "pytz",
 "h5py",
 "transforms3d",
-"pytest",
+]
+
+[project.optional-dependencies]
+dependencies = [
+ "pytest",
 ]
 
 [project.urls]
-Documentation = "https://github.com/simoncampredon-lang/pyiconeus#readme"
-Issues = "https://github.com/simoncampredon-lang/pyiconeus/issues"
-Source = "https://github.com/simoncampredon-lang/pyiconeus"
+Documentation = "https://github.com/Iconeus/pyiconeus#readme"
+Issues = "https://github.com/Iconeus/pyiconeus/issues"
+Source = "https://github.com/Iconeus/pyiconeus"
 
 [tool.hatch.version]
 path = "src/pyiconeus/__about__.py"
