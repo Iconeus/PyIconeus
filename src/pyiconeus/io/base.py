@@ -9,7 +9,6 @@ from ..models.Scan import Scan
 SCAN_4CC_STR = "scan"
 ROI_4CC_STR = "bri_"
 BPS_4CC_STR = "bps_"
-RAW_4CC_STR = "raw_"
 
 
 def check_fourCC(filepath: str, str_check: str) -> bool:
