@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "pyiconeus"
 dynamic = ["version"]
-description = ''
+description = "Read Iconeus scan, positioning, ROI and IQ data formats."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -35,7 +35,7 @@ dependencies = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/Iconeus/pyiconeus#readme"
+Documentation = "https://iconeus.github.io/PyIconeus/"
 Issues = "https://github.com/Iconeus/pyiconeus/issues"
 Source = "https://github.com/Iconeus/pyiconeus"
 

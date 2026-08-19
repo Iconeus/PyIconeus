@@ -1,7 +1,7 @@
 The ``.bri`` format
 ======================
 
-This page is dedicated to the Scan format '.bri'
+This page is dedicated to the ROI format ``.bri``.
 
 .. contents:: On this page
    :local:
@@ -13,33 +13,25 @@ ROI (Region of Interest)
 Attributes
 +++++++++++
 
-list : list[RoiElement]
-	List containing each ROI of the '.bri' file
+list : list[RoiElements]
+    List containing each ROI of the ``.bri`` file. The order follows the file.
 
 
-RoiElement
+RoiElements
 -----------
 
 Attributes
 +++++++++++
 
-label : str
-	Name of the ROI
+name : str
+    Name of the ROI
 
-color : RoiColor # to change
-	RoiColor element, containing a (R, G, B) vector
+color : tuple[float, float, float]
+    Normalized (R, G, B) vector with three components in the range 0..1.
 
 vertices : np.ndarray
 	(N, 3) array: each row containing the (x, y, z) coordinates of the vertex
 
 faces : np.ndarray
-	(N, 3) array: 3 indices per row, each index refers to the 'vertices' array, building the face
-
-RoiColor
---------
-
-Attributes
-++++++++++
-
-x, y, z : float
-	r, g, b component of the ROI
+    (N, 3) array: three zero-based indices per row, each referring to
+    ``vertices`` and defining one triangular face.

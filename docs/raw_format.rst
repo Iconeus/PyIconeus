@@ -1,7 +1,8 @@
 The ``.raw`` format
 ======================
 
-This page is dedicated to the IQ format '.raw', and its associated '.hraw' format
+This page is dedicated to the IQ format ``.raw`` and its associated ``.hraw``
+metadata header. The two files are required together.
 
 .. contents:: On this page
    :local:
@@ -17,7 +18,9 @@ metadata : MetaData
 	metadata of the raw file (mandatory)
 
 data : np.ndarray
-	numpy array containing the raw data after th beamforming
+    NumPy array containing the complex IQ data after beamforming. The leading
+    dimensions are ordered as ``(sizeZ, sizeY, sizeX, compound, frames, blocks)``
+    before singleton dimensions are removed by ``numpy.squeeze``.
 
 MetaData
 ---------
@@ -25,7 +28,7 @@ MetaData
 Attributes
 +++++++++++
 
-transmitFraquency : float
+transmitFrequency : float
     The transmit frequency of the acquisition
 
 prf : float
@@ -59,7 +62,16 @@ numberOfBlock : int
     Number of blocks
 
 isCrypted : bool
-    Is the IQ crypted or not
+	Is the IQ crypted or not
+
+Block selection
+---------------
+
+``open_path`` accepts the optional ``blockStart`` and ``blockEnd`` arguments.
+They are one-based and inclusive, and default to block 1. If ``blockEnd`` is
+greater than ``numberOfBlock``, it is clamped to the available number of
+blocks and a ``RuntimeWarning`` is emitted. ``blockEnd`` smaller than
+``blockStart`` raises ``RuntimeError``.
 
 acquisitionMode : str
 	Type of acquisition

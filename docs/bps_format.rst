@@ -1,7 +1,7 @@
 The ``.bps`` format
 ======================
 
-This page is dedicated to the Scan format '.bps'
+This page is dedicated to the BPS format, ``.bps``.
 
 .. contents:: On this page
    :local:
@@ -10,10 +10,13 @@ This page is dedicated to the Scan format '.bps'
 BPS
 -----
 
-The 'BPS' is Iconeus' 'Brain Positioning System', a 4x4 transform matrix from Brain space to Lab space (Also called Brain to Lab transform (B2L))
+The BPS (Brain Positioning System) is a 4x4 affine transform from Brain space
+to Lab space, also called the Brain-to-Lab transform (B2L). Both the HDF5 and
+binary variants are supported. Load it with :func:`pyiconeus.open_path` and
+access the matrix through ``data``.
 
 Data
 ++++
 
 data : np.ndarray
-	The 4x4 transform matrix
+    The 4x4 transform matrix.

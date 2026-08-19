@@ -5,6 +5,8 @@ PyIconeus documentation
 give an easy to use, open-source library for reading and using the Iconeus
 official formats.
 
+Version |version|. Python 3.10 and newer are supported.
+
 PyIconeus handles the following file formats:
 
 - ``.scan``

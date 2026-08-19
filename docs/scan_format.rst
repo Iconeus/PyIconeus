@@ -1,7 +1,8 @@
 The ``.scan`` format
 ======================
 
-This page is dedicated to the Scan format '.scan' and its different helpers classes.
+This page is dedicated to the ``.scan`` format and its helper classes. PyIconeus
+supports both legacy HDF5 scans and binary scans.
 
 .. contents:: On this page
    :local:
@@ -141,15 +142,21 @@ measuredTimes : list[float]
 theoricalTimeIndices : list[int]
     Indices of the measuredTimes list
 
-probeToLabsTranslations : :class:`~pyiconeus.models.Scan.ProbeToLabElements`
-    Mean translation per probe rotation, see the :ref:`probetolab-section` section below
+probeToLabsTranslations : numpy.ndarray
+    Array of mean translations, with shape ``(nPose, 3)``.
 
-probeToLabsRotations : :class:`~pyiconeus.models.Scan.ProbeToLabElements`
-    List of rotation of the probe
+probeToLabsRotations : numpy.ndarray
+    Array of rotations in radians, with shape ``(nPose, 3)``.
+
+The :meth:`~pyiconeus.models.Scan.Scan.get_ProbeToLab` method combines these
+values into one 4x4 affine matrix per pose. The
+:meth:`~pyiconeus.models.Scan.Scan.get_VoxelToProbe` method returns the 4x4
+voxel-to-probe affine matrix.
 
 voxels : numpy.ndarray
-    The actual data of the acquisition
-    shape = (sizeX, sizeY, sizeZ, nTime, nPose, dim6)
+    The actual data of the acquisition. Binary scans use the shape
+    ``(sizeX, sizeY, sizeZ, nTime, nPose, dim6)``. Legacy HDF5 scans may be
+    consolidated while loading; inspect ``voxels.shape`` for the exact result.
 
 Format & version
 ++++++++++++++++++
@@ -250,23 +257,6 @@ VelocityBandwidthFiltering
 
 velocityMin, velocityMax : float
     *(TODO - specify the unit, e.g. mm/s.)*
-
-.. _probetolab-section:
-
-ProbeToLabElements
---------------------
-
-matricesCount : int
-    Number of matrices
-
-matricesList : list[ProbeToLabMatrices]
-    List of matrices
-
-ProbeToLabMatrices
-+++++++++++++++++++
-
-x, y, z : float
-    Vector of translation or rotation
 
 .. _icoscanversion-section:
 
