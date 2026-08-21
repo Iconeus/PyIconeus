@@ -8,7 +8,8 @@ dynamic = ["version"]
 description = "Read Iconeus scan, positioning, ROI and IQ data formats."
 readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
+license = "BSD-3-Clause"
+license-files = ["LICENSE.txt"]
 keywords = []
 authors = [
   { name = "Iconeus" },
@@ -35,7 +36,6 @@ test = [
 ]
 
 [project.urls]
-Documentation = "https://iconeus.github.io/PyIconeus/"
 Issues = "https://github.com/Iconeus/pyiconeus/issues"
 Source = "https://github.com/Iconeus/pyiconeus"
 
