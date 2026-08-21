@@ -4,7 +4,23 @@ import numpy as np
 import numpy.typing as npt
 import h5py
 
-encoding = "utf-8"
+_MAX_BINARY_STRING_SIZE = 16 * 1024 * 1024
+
+
+def _read_exact(stream: BufferedReader, size: int) -> bytes:
+    if size < 0:
+        raise ValueError("size must be non-negative")
+    offset = stream.tell()
+    data = stream.read(size)
+    if len(data) != size:
+        raise OSError(
+            f"Unexpected end of file at offset {offset}: expected {size} bytes, got {len(data)}"
+        )
+    return data
+
+
+def _read_struct(stream: BufferedReader, format: str):
+    return struct.unpack(format, _read_exact(stream, struct.calcsize(format)))[0]
 
 
 def hdf5_string_reader(hdf5_dataset: h5py.Dataset) -> str:

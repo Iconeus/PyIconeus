@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
-from struct import unpack
+
+from ..utils.utils import _read_struct
 
 
 class Bps:
@@ -21,7 +22,16 @@ class Bps:
                 f.seek(12)
                 for i in range(4):
                     for j in range(4):
-                        self.data[i][j] = unpack("<d", f.read(8))[0]
+                        self.data[i][j] = _read_struct(f, "<d")
         else:
             with h5py.File(filepath, "r") as f:
-                self.data: np.ndarray = f["BrainToLab"][:]
+                dataset = f["BrainToLab"]
+                if dataset.shape != (4, 4):
+                    raise ValueError(
+                        f"BrainToLab must have shape (4, 4), got {dataset.shape}"
+                    )
+                self.data: np.ndarray = dataset[:]
+        if self.data.shape != (4, 4):
+            raise ValueError(
+                f"BrainToLab must have shape (4, 4), got {self.data.shape}"
+            )

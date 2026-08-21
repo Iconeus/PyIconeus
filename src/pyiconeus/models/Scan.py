@@ -1,8 +1,9 @@
 from io import BufferedReader
+import os
+import re
 import h5py
 import pytz
 import numpy as np
-from struct import unpack
 from datetime import datetime
 from enum import IntEnum
 from ..utils.utils import (
@@ -13,6 +14,7 @@ from ..utils.utils import (
     transform_points_forward,
     rotation_xyz,
     inverse_rotation_xyz,
+    _read_struct,
 )
 from ..utils.consolidation import consolidate_scan
 
@@ -80,9 +82,9 @@ class Scan:
         self.acquisitionDate: datetime
         self.type: ScanType
         self.stimulationToggleTimes: list[float] = []
-        self.icoScanVersion: IcoScanVersion | None
+        self.icoScanVersion: IcoScanVersion | None = None
         self.voxels: np.ndarray
-        self.bps: Bps
+        self.bps: Bps | None = None
         if is_binary:
             self.load_scan_binary(filepath)
         else:
@@ -408,75 +410,77 @@ class Scan:
         """
         with open(filepath, "rb") as f:
             f.seek(32)
-            dO: int = unpack("<Q", f.read(8))[0]
+            dO: int = _read_struct(f, "<Q")
             f.seek(92)
-            self.sizeX = unpack("<Q", f.read(8))[0]
-            self.sizeY = unpack("<Q", f.read(8))[0]
-            self.sizeZ = unpack("<Q", f.read(8))[0]
-            self.nTime = unpack("<Q", f.read(8))[0]
-            self.nPose = unpack("<Q", f.read(8))[0]
+            self.sizeX = _read_struct(f, "<Q")
+            self.sizeY = _read_struct(f, "<Q")
+            self.sizeZ = _read_struct(f, "<Q")
+            self.nTime = _read_struct(f, "<Q")
+            self.nPose = _read_struct(f, "<Q")
+            if min(self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose) <= 0:
+                raise ValueError("scan dimensions must be positive")
             self.dim6 = Dim6()
             self.dim6.load_binary(f)
             self.voxDim = VoxDim()
             self.voxDim.load_binary(f)
             timeArraySize: int = self.sizeY * self.nTime * self.nPose
+            if timeArraySize > os.fstat(f.fileno()).st_size // 8:
+                raise OSError("binary scan timing data is truncated")
             for _ in range(timeArraySize):
-                self.measuredTimes.append(unpack("<d", f.read(8))[0])
+                self.measuredTimes.append(_read_struct(f, "<d"))
             for _ in range(timeArraySize):
-                self.theoricalTimeIndices.append(unpack("<L", f.read(4))[0])
+                self.theoricalTimeIndices.append(_read_struct(f, "<L"))
                 self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
                 self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
             for i in range(self.nPose):
-                x = unpack("<d", f.read(8))[0]
-                y = unpack("<d", f.read(8))[0]
-                z = unpack("<d", f.read(8))[0]
+                x = _read_struct(f, "<d")
+                y = _read_struct(f, "<d")
+                z = _read_struct(f, "<d")
                 self.probeToLabsTranslations[i] = [x, y, z]
             for i in range(self.nPose):
-                x = unpack("<d", f.read(8))[0]
-                y = unpack("<d", f.read(8))[0]
-                z = unpack("<d", f.read(8))[0]
+                x = _read_struct(f, "<d")
+                y = _read_struct(f, "<d")
+                z = _read_struct(f, "<d")
                 self.probeToLabsRotations[i] = [x, y, z]
             f.seek(4, 1)
-            self.acquisitionMode = AcquisitionMode(unpack("<L", f.read(4))[0])
+            self.acquisitionMode = AcquisitionMode(_read_struct(f, "<L"))
             f.seek(4, 1)
             self.probe = Probe()
             self.probe.load_binary(f)
-            depthNear = unpack("<d", f.read(8))[0]
-            depthFar = unpack("<d", f.read(8))[0]
+            depthNear = _read_struct(f, "<d")
+            depthFar = _read_struct(f, "<d")
             self.depth = Depth()
             self.depth.depthNear = depthNear
             self.depth.depthFar = depthFar
-            self.ultrafastTransmitFrequency = unpack("<d", f.read(8))[0]
-            self.pulseRepetitionFrequency = unpack("<d", f.read(8))[0]
-            self.ultrafastSamplingFrequency = unpack("<d", f.read(8))[0]
+            self.ultrafastTransmitFrequency = _read_struct(f, "<d")
+            self.pulseRepetitionFrequency = _read_struct(f, "<d")
+            self.ultrafastSamplingFrequency = _read_struct(f, "<d")
             f.seek(8, 1)
-            nPlaneWavesAngles = unpack("<L", f.read(4))[0]
+            nPlaneWavesAngles = _read_struct(f, "<L")
             for _ in range(nPlaneWavesAngles):
-                self.planeWaveAngles.append(unpack("<d", f.read(8))[0])
-            tempVal: int = unpack("<L", f.read(4))[0]
+                self.planeWaveAngles.append(_read_struct(f, "<d"))
+            tempVal: int = _read_struct(f, "<L")
             f.seek(tempVal * 24 + 8, 1)
-            self.transmitVoltage = unpack("<d", f.read(8))[0]
+            self.transmitVoltage = _read_struct(f, "<d")
             f.seek(4, 1)
-            self.delayAfterTrigger = unpack("<d", f.read(8))[0]
-            tempVal = unpack("<L", f.read(4))[0]
+            self.delayAfterTrigger = _read_struct(f, "<d")
+            tempVal = _read_struct(f, "<L")
             f.seek(tempVal * 8, 1)
-            self.isMultiplane = unpack("<?", f.read(1))[0]
+            self.isMultiplane = _read_struct(f, "<?")
             f.seek(1, 1)
-            self.integrationWindowDuration = unpack("<d", f.read(8))[0]
+            self.integrationWindowDuration = _read_struct(f, "<d")
             self.sequenceName = read_string_binary(f, "<L", 4)
             self.projectTag = read_string_binary(f, "<L", 4)
             self.projectDescription = read_string_binary(f, "<L", 4)
             self.subjectTag = read_string_binary(f, "<L", 4)
             self.sessionTag = read_string_binary(f, "<L", 4)
             self.species = read_string_binary(f, "<L", 4)
-            self.gender = GenderType(unpack("<L", f.read(4))[0])
-            self.transferDate = datetime.fromtimestamp(
-                unpack("<q", f.read(8))[0], pytz.utc
-            )
-            self.ageAtTransfer = unpack("<Q", f.read(8))[0]
+            self.gender = GenderType(_read_struct(f, "<L"))
+            self.transferDate = datetime.fromtimestamp(_read_struct(f, "<q"), pytz.utc)
+            self.ageAtTransfer = _read_struct(f, "<Q")
             self.subjectDescription = read_string_binary(f, "<L", 4)
-            self.weightUnit = WeightUnitType(unpack("<L", f.read(4))[0])
-            self.weight = unpack("<f", f.read(4))[0]
+            self.weightUnit = WeightUnitType(_read_struct(f, "<L"))
+            self.weight = _read_struct(f, "<f")
             self.treatment = read_string_binary(f, "<L", 4)
             self.scanTag = read_string_binary(f, "<L", 4)
             self.studyType = read_string_binary(f, "<L", 4)
@@ -484,18 +488,18 @@ class Scan:
             self.taskDescription = read_string_binary(f, "<L", 4)
             self.username = read_string_binary(f, "<L", 4)
             for _ in range(2):
-                tempVal = unpack("<L", f.read(4))[0]
+                tempVal = _read_struct(f, "<L")
                 f.seek(tempVal, 1)
             self.acquisitionDate = datetime.fromtimestamp(
-                unpack("<q", f.read(8))[0], pytz.utc
+                _read_struct(f, "<q"), pytz.utc
             )
-            self.type = ScanType(unpack("<L", f.read(4))[0])
-            toggleTimes: int = unpack("<L", f.read(4))[0]
+            self.type = ScanType(_read_struct(f, "<L"))
+            toggleTimes: int = _read_struct(f, "<L")
             for _ in range(toggleTimes):
-                self.stimulationToggleTimes.append(unpack("<f", f.read(4))[0])
-            icoScanMajor = unpack("<L", f.read(4))[0]
-            icoScanMinor = unpack("<L", f.read(4))[0]
-            icoScanPatch = unpack("<L", f.read(4))[0]
+                self.stimulationToggleTimes.append(_read_struct(f, "<f"))
+            icoScanMajor = _read_struct(f, "<L")
+            icoScanMinor = _read_struct(f, "<L")
+            icoScanPatch = _read_struct(f, "<L")
             self.icoScanVersion = IcoScanVersion(
                 icoScanMajor, icoScanMinor, icoScanPatch
             )
@@ -518,7 +522,7 @@ class Scan:
                     self.nPose,
                     self.dim6.count,
                 ),
-                order="F",  # Reshape in Fortran-like order, since MATLAB uses the same order
+                order="F",
             )
 
     def get_VoxelToProbe(self) -> np.ndarray:
@@ -655,12 +659,12 @@ class VoxDim:
 
         None
         """
-        self.dx = unpack("<d", f.read(8))[0]
-        self.dy = unpack("<d", f.read(8))[0]
-        self.dz = unpack("<d", f.read(8))[0]
-        self.dt = unpack("<d", f.read(8))[0]
-        self.dr = unpack("<d", f.read(8))[0]
-        self.dtheta = unpack("<d", f.read(8))[0]
+        self.dx = _read_struct(f, "<d")
+        self.dy = _read_struct(f, "<d")
+        self.dz = _read_struct(f, "<d")
+        self.dt = _read_struct(f, "<d")
+        self.dr = _read_struct(f, "<d")
+        self.dtheta = _read_struct(f, "<d")
 
     def __str__(self) -> str:
         return f"\n\tdx: {self.dx}\n\tdy: {self.dy}\n\tdz: {self.dz}\n\tdt: {self.dt}\n\tdr: {self.dr}\n\tdtheta: {self.dtheta}\n"
@@ -714,17 +718,17 @@ class Dim6:
 
             None
             """
-            self.clutterFilter = self.clutterFilterType(unpack("<L", f.read(4))[0])
-            self.clutterFilterWindowDuration = unpack("<d", f.read(8))[0]
+            self.clutterFilter = self.clutterFilterType(_read_struct(f, "<L"))
+            self.clutterFilterWindowDuration = _read_struct(f, "<d")
             if (
                 self.clutterFilter == self.clutterFilterType.StaticSVD
                 or self.clutterFilter == self.clutterFilterType.DynamicSVD
             ):
-                self.clutterFilterCutoffLow = unpack("<L", f.read(4))[0]
-                self.clutterFilterCutoffHigh = unpack("<L", f.read(4))[0]
+                self.clutterFilterCutoffLow = _read_struct(f, "<L")
+                self.clutterFilterCutoffHigh = _read_struct(f, "<L")
             else:
-                self.clutterFilterCutoffLow = unpack("<f", f.read(4))[0]
-                self.clutterFilterCutoffHigh = unpack("<f", f.read(4))[0]
+                self.clutterFilterCutoffLow = _read_struct(f, "<f")
+                self.clutterFilterCutoffHigh = _read_struct(f, "<f")
             return self
 
         def __str__(self) -> str:
@@ -755,8 +759,8 @@ class Dim6:
 
             None
             """
-            self.velocityMin = unpack("<f", f.read(4))[0]
-            self.velocityMax = unpack("<f", f.read(4))[0]
+            self.velocityMin = _read_struct(f, "<f")
+            self.velocityMax = _read_struct(f, "<f")
             f.seek(12, 1)
             return self
 
@@ -784,10 +788,12 @@ class Dim6:
 
         None
         """
-        self.count = unpack("<Q", f.read(8))[0]
+        self.count = _read_struct(f, "<Q")
+        if self.count > (os.fstat(f.fileno()).st_size - f.tell()) // 4:
+            raise OSError("binary scan dim6 data is truncated")
         dim6intents: list[int] = []
         for _ in range(self.count):
-            dim6intents.append(unpack("<L", f.read(4))[0])
+            dim6intents.append(_read_struct(f, "<L"))
         for intent in dim6intents:
             if (
                 intent == self.Dim6Intent.EnhancedDoppler
@@ -888,13 +894,13 @@ class Probe:
 
         None
         """
-        self.probeType = self.ProbeType(unpack("<L", f.read(4))[0])
-        self.probeCentralFrequency = unpack("<d", f.read(8))[0]
-        self.probePitch = unpack("<d", f.read(8))[0]
-        self.probeElevationAperture = unpack("<d", f.read(8))[0]
+        self.probeType = self.ProbeType(_read_struct(f, "<L"))
+        self.probeCentralFrequency = _read_struct(f, "<d")
+        self.probePitch = _read_struct(f, "<d")
+        self.probeElevationAperture = _read_struct(f, "<d")
         f.seek(8, 1)
-        self.probeRadiusOfCurvature = unpack("<d", f.read(8))[0]
-        self.probeNumberOfElements = unpack("<H", f.read(2))[0]
+        self.probeRadiusOfCurvature = _read_struct(f, "<d")
+        self.probeNumberOfElements = _read_struct(f, "<H")
         self.probeModel = read_string_binary(f, "<H", 2)
         self.name = read_string_binary(f, "<H", 2)
 
@@ -910,6 +916,7 @@ class Probe:
         )
 
     __repr__ = __str__
+
 
 class Depth:
     def __init__(self) -> None:
