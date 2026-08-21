@@ -64,9 +64,7 @@ More complete, runnable walkthroughs are available as notebooks in the
 `examples <https://github.com/Iconeus/PyIconeus/tree/main/examples>`_
 directory of the repository:
 
-- ``Scan_Plotting_example.ipynb``
 - ``Connectivity example.ipynb``
-- ``Roi_usage.ipynb``
 - ``IQ Data loading.ipynb``
 
 See the :doc:`api` for the full reference of every class and function.
