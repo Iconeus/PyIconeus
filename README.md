@@ -97,4 +97,4 @@ python -m pip install -e ".[test]"
 
 ## License
 
-`pyiconeus` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+`pyiconeus` is distributed under the terms of the [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html) license.
