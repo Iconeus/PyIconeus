@@ -23,15 +23,15 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-"numpy",
-"pytz",
-"h5py",
-"transforms3d",
+ "numpy>=1.23",
+ "pytz>=2022.1",
+ "h5py>=3.8",
+ "transforms3d>=0.4.2",
 ]
 
 [project.optional-dependencies]
-dependencies = [
- "pytest",
+test = [
+ "pytest>=8",
 ]
 
 [project.urls]

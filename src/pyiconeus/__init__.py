@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+from pyiconeus.__about__ import __version__
 from pyiconeus.models.Scan import Scan
 from pyiconeus.models.Bps import Bps
 from pyiconeus.models.Raw import Raw
@@ -15,4 +16,5 @@ __all__ = [
     "Raw",
     "Roi",
     "open_path",
+    "__version__",
 ]
