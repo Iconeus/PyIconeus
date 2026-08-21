@@ -3,6 +3,7 @@ import zipfile
 import os
 import hashlib
 import requests
+from pathlib import Path
 
 RECORD_ID = "21807850"  
 FILENAME = "data.zip"
@@ -11,7 +12,7 @@ LOCAL_PATH = "./data.zip"
 
 def get_zenodo_md5(record_id, filename):
     url = f"https://zenodo.org/api/records/{record_id}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
     response.raise_for_status()
     
     files = response.json().get('files', [])
@@ -50,18 +51,24 @@ def verify_file(record_id, filepath, filename):
         return False
 
 
-def download_test_data(dest: str, record_id: str, filename: str):
-    if os.path.exists(dest):
-        return
+def download_test_data(dest: str, record_id: str, filename: str) -> bool:
+    destination = Path(dest)
+    if destination.is_dir() and any(destination.iterdir()):
+        return False
     print("Downloading test data...")
     url = f"https://zenodo.org/records/{record_id}/files/{filename}"
     print(url)
-    urllib.request.urlretrieve(url, filename)
-    with zipfile.ZipFile(filename) as z:
-        z.extractall("tests")
+    archive = Path(filename)
+    urllib.request.urlretrieve(url, archive)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive) as z:
+        z.extractall(destination.parent)
+    return True
 
 if __name__ == '__main__':
-    download_test_data(DESTINATION, RECORD_ID, FILENAME)
-    print("Checksum check...")
-    if verify_file(RECORD_ID, LOCAL_PATH, FILENAME):
-        os.remove(FILENAME)
+    if download_test_data(DESTINATION, RECORD_ID, FILENAME):
+        print("Checksum check...")
+        if verify_file(RECORD_ID, LOCAL_PATH, FILENAME):
+            os.remove(FILENAME)
+    else:
+        print("Test data already exists; skipping download and checksum.")

@@ -13,24 +13,24 @@ jobs:
   prepare-data:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v6
       with:
         python-version: "3.12"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests
-    - name: Download test datas
-      run: python download_script.py
-    
-    - name: Upload test datas
-      uses: actions/upload-artifact@v4
+    - name: Restore test data cache
+      id: test-data-cache
+      uses: actions/cache@v5
       with:
-        name: test-data-artifact
         path: tests/data/
-        retention-days: 1
+        key: pyiconeus-test-data-${{ runner.os }}-${{ hashFiles('download_script.py') }}
+    - name: Download test data
+      if: steps.test-data-cache.outputs.cache-hit != 'true'
+      run: python download_script.py
 
   build:
     needs: prepare-data
@@ -41,16 +41,16 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download test datas artifact
-      uses: actions/download-artifact@v4
+    - uses: actions/checkout@v5
+
+    - name: Restore test data cache
+      uses: actions/cache/restore@v5
       with:
-        name: test-data-artifact
         path: tests/data/
+        key: pyiconeus-test-data-${{ runner.os }}-${{ hashFiles('download_script.py') }}
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
         
