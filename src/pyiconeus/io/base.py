@@ -1,5 +1,4 @@
 import os
-from typing import Any
 
 from ..models.Bps import Bps
 from ..models.Raw import Raw
@@ -11,7 +10,7 @@ ROI_4CC_STR = "bri_"
 BPS_4CC_STR = "bps_"
 
 
-def check_fourCC(filepath: str, str_check: str) -> bool:
+def check_fourCC(filepath: str | os.PathLike[str], str_check: str) -> bool:
     """Check whether a file's leading 4-byte magic number matches str_check."""
     try:
         with open(filepath, "rb") as f:
@@ -20,52 +19,59 @@ def check_fourCC(filepath: str, str_check: str) -> bool:
         raise OSError(f"Could not read {filepath!r}: {e}") from e
 
     if len(header) < 4:
-        # File is shorter than the magic number itself
         return False
 
     try:
         fourCC = header.decode("utf-8")
     except UnicodeDecodeError:
-        # Not valid text -> definitely not a match, not a crash
         return False
 
     return fourCC == str_check
 
 
-def read_scan(filepath: str) -> Scan:
+def read_scan(filepath: str | os.PathLike[str]) -> Scan:
     return Scan(filepath, check_fourCC(filepath, SCAN_4CC_STR))
 
 
-def read_bri(filepath: str) -> Roi:
+def read_bri(filepath: str | os.PathLike[str]) -> Roi:
     return Roi(filepath, check_fourCC(filepath, ROI_4CC_STR))
 
 
-def read_bps(filepath: str) -> Bps:
+def read_bps(filepath: str | os.PathLike[str]) -> Bps:
     return Bps(filepath, check_fourCC(filepath, BPS_4CC_STR))
 
 
 def read_raw(
-    filepath: str, fileheader: str, blockStart: int = 1, blockEnd: int = 1
+    filepath: str | os.PathLike[str],
+    fileheader: str | os.PathLike[str],
+    blockStart: int = 1,
+    blockEnd: int = 1,
 ) -> Raw:
     return Raw(filepath, fileheader, blockStart, blockEnd)
 
 
 def dispatch_extension(
-    filepath: str, fileheader: str | None, blockStart: int = 1, blockEnd: int = 1
+    filepath: str | os.PathLike[str],
+    fileheader: str | os.PathLike[str] | None,
+    blockStart: int = 1,
+    blockEnd: int = 1,
 ) -> Scan | Bps | Roi | Raw:
     """Returns the correct PyIconeus object by checking the file format of the given path"""
-    if filepath.endswith(".scan"):
+    filepath = os.fspath(filepath)
+    fileheader = os.fspath(fileheader) if fileheader is not None else None
+    extension = os.path.splitext(filepath)[1].lower()
+    if extension == ".scan":
         return read_scan(filepath)
-    elif filepath.endswith(".bps"):
+    elif extension == ".bps":
         return read_bps(filepath)
-    elif filepath.endswith(".bri"):
+    elif extension == ".bri":
         return read_bri(filepath)
-    elif filepath.endswith(".raw"):
+    elif extension == ".raw":
         if not fileheader:
             raise ValueError(
                 f"{filepath!r} is a .raw file but no fileheader was provided"
             )
-        if not fileheader.endswith(".hraw"):
+        if os.path.splitext(fileheader)[1].lower() != ".hraw":
             raise ValueError(
                 f"fileheader {fileheader!r} must end with .hraw for a .raw file"
             )
@@ -75,8 +81,11 @@ def dispatch_extension(
 
 
 def open_path(
-    path: str, path2: str | None = None, blockStart: int = 1, blockEnd: int = 1
-) -> Any:
+    path: str | os.PathLike[str],
+    path2: str | os.PathLike[str] | None = None,
+    blockStart: int = 1,
+    blockEnd: int = 1,
+) -> Scan | Bps | Roi | Raw:
     """Main IO function.
     Checks if the file exist, then dispatch the path in the correct function.
 
@@ -99,10 +108,16 @@ def open_path(
 
     PyIconeus object depending of the given file
     """
+    path = os.fspath(path)
+    path2 = os.fspath(path2) if path2 is not None else None
     if not os.path.isfile(path):
         raise FileNotFoundError(2, "The following file does not exist", path)
 
-    if path2 is not None and not os.path.isfile(path2):
+    if (
+        os.path.splitext(path)[1].lower() == ".raw"
+        and path2 is not None
+        and not os.path.isfile(path2)
+    ):
         raise FileNotFoundError(2, "The following file does not exist", path2)
 
     return dispatch_extension(path, path2, blockStart, blockEnd)
