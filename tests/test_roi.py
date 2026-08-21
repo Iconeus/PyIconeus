@@ -27,14 +27,14 @@ def test_roi_dispatch_version():
 def test_roi_values():
     roi_test: pyiconeus.Roi = read_bri("./tests/data" + "/Cortex.bri")
     assert roi_test.list[0].name == "Isocortex (L)"
-    color =  roi_test.list[0].color
+    color = roi_test.list[0].color
     assert color[0] == float(112 / 255)
     assert color[1] == float(255 / 255)
     assert color[2] == float(113 / 255)
     assert roi_test.list[0].faces.shape == np.ndarray(shape=(10000, 3)).shape
     assert roi_test.list[0].vertices.shape == np.ndarray(shape=(4991, 3)).shape
     assert roi_test.list[1].name == "Isocortex (R)"
-    color =  roi_test.list[0].color
+    color = roi_test.list[0].color
     assert color[0] == float(112 / 255)
     assert color[1] == float(255 / 255)
     assert color[2] == float(113 / 255)

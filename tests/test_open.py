@@ -1,6 +1,6 @@
 import pyiconeus
 
-# Scan open
+
 def test_open_scan_v2():
     scan = pyiconeus.open_path(
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"
@@ -10,7 +10,6 @@ def test_open_scan_v2():
     assert isinstance(scan, pyiconeus.Scan)
 
 
-# Bps open
 def test_open_bps():
     bps = pyiconeus.open_path("./tests/data" + "/Mouse.bps")
     assert isinstance(bps, pyiconeus.Bps)
@@ -23,7 +22,6 @@ def test_open_bps_v2():
     assert isinstance(bps, pyiconeus.Bps)
 
 
-# Roi open
 def test_open_roi():
     roi = pyiconeus.open_path("./tests/data" + "/roi_for_4DStacked.bri")
     assert isinstance(roi, pyiconeus.Roi)

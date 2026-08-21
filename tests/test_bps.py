@@ -6,7 +6,7 @@ from pyiconeus.io.base import read_bps
 def test_bps_load():
     bps: pyiconeus.Bps = read_bps("./tests/data" + "/Mouse.bps")
     assert isinstance(bps, pyiconeus.Bps)
-    assert bps.data.shape == np.ndarray((4,4)).shape
+    assert bps.data.shape == np.ndarray((4, 4)).shape
 
 
 def test_assign_bps():
@@ -23,7 +23,7 @@ def test_load_bps_v2():
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
     )
     assert isinstance(bps, pyiconeus.Bps)
-    assert bps.data.shape == np.ndarray((4,4)).shape
+    assert bps.data.shape == np.ndarray((4, 4)).shape
 
 
 def test_bps_v2_data():
@@ -57,6 +57,4 @@ def test_bps_v2_data():
     print(data_true)
     print("bps data: ")
     print(bps.data)
-    assert np.allclose(
-        bps.data, data_true
-    )  # Numpy round too large values, check if values are close enough
+    assert np.allclose(bps.data, data_true)

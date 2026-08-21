@@ -32,10 +32,16 @@ def test_2D_Scan():
     assert scan.acquisitionMode == AcquisitionMode._2DScan
     assert scan.sizeY == 1
 
+
 def test_3D_Scan():
-    scan = Scan("./tests/data/" + "sub-souris1_ses-Session_2021-3-9_Angio3Dscan_angio3D.source.scan", False)
+    scan = Scan(
+        "./tests/data/"
+        + "sub-souris1_ses-Session_2021-3-9_Angio3Dscan_angio3D.source.scan",
+        False,
+    )
     assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode._3DScan
+
 
 def test_scan_values():
     scan = Scan(
@@ -70,7 +76,7 @@ def test_voxel_to_prob():
     print("VoxelToProbeCreation")
     print(vTp)
     assert vTp is not None
-    assert vTp.shape == np.ndarray((4,4)).shape
+    assert vTp.shape == np.ndarray((4, 4)).shape
 
 
 def test_load_v1():
@@ -78,7 +84,7 @@ def test_load_v1():
         "./tests/data" + "/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False
     )
     assert isinstance(scanv1, Scan)
-    assert scanv1.nPose == 1 # consolidated
+    assert scanv1.nPose == 1
 
 
 def test_compare_v1_v2_scanmetaData():
@@ -114,15 +120,21 @@ def test_compare_v1_v2_scanmetaData():
     assert scanv1.icoScanVersion.minor == scanv2.icoScanVersion.minor
     assert scanv1.icoScanVersion.patch == scanv2.icoScanVersion.patch
 
+
 def test_compare_matrices():
-    scanv1: Scan = Scan("./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False)
-    scanv2: Scan = Scan("./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan", True)
+    scanv1: Scan = Scan(
+        "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False
+    )
+    scanv2: Scan = Scan(
+        "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan", True
+    )
 
     assert isinstance(scanv1, Scan)
     assert isinstance(scanv2, Scan)
     ptl1 = scanv1.get_ProbeToLab()[0]
     ptl2 = scanv2.get_ProbeToLab()[0]
     assert np.allclose(ptl1, ptl2)
+
 
 def test_compare_acqMetaData():
     scanv1: Scan = Scan(
@@ -151,6 +163,7 @@ def test_compare_acqMetaData():
     assert scanv1.delayAfterTrigger == scanv2.delayAfterTrigger
     assert scanv1.integrationWindowDuration == scanv2.integrationWindowDuration
     assert scanv1.voxels.shape == np.ndarray(shape=(105, 16, 87, 325, 1, 1)).shape
+
 
 def test_4DCustomScan():
     scan: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.scan", False)
@@ -183,9 +196,10 @@ def test_4DCustomScan():
     assert scan.voxels.shape == scanv2.voxels.shape
 
 
-
 def test_RCA_loading():
-    scan: Scan = Scan("./tests/data" + "/4Dscan_1_15_15_15_8_fus3D.source_v2.scan", True)
+    scan: Scan = Scan(
+        "./tests/data" + "/4Dscan_1_15_15_15_8_fus3D.source_v2.scan", True
+    )
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
     assert scan.probe.name == "IcoPrime"
@@ -194,5 +208,6 @@ def test_RCA_loading():
     assert scan.probe.probeType == Probe.ProbeType.RCA
     assert scan.acquisitionMode == AcquisitionMode._4DscanRCA
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_compare_matrices()

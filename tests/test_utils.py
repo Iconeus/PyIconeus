@@ -1,12 +1,28 @@
 import h5py
 import numpy as np
-from pyiconeus.utils.utils import hdf5_printer, rotation_xyz, inverse_rotation_xyz
+from pyiconeus.utils.utils import (
+    hdf5_printer,
+    hdf5_string_reader,
+    inverse_rotation_xyz,
+    rotation_xyz,
+)
 
 
 def test_hdf5_printer():
     with h5py.File("./tests/data/2DScan.source.scan") as f:
         hdf5_printer(f["Data"])
         assert True
+
+
+def test_hdf5_string_reader_variants(tmp_path):
+    path = tmp_path / "strings.h5"
+    with h5py.File(path, "w") as file:
+        file.create_dataset(
+            "scalar", data="café", dtype=h5py.string_dtype(encoding="utf-8")
+        )
+        file.create_dataset("array", data=np.asarray([["value"]], dtype="S8"))
+        assert hdf5_string_reader(file["scalar"]) == "café"
+        assert hdf5_string_reader(file["array"]) == "value"
 
 
 def test_rotation_matrix():
