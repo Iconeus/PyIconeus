@@ -64,6 +64,14 @@ Run the tests (the repository test data must be present):
 pytest
 ```
 
+## Documentation
+
+You can build the documentation using [`Sphinx`](https://www.sphinx-doc.org/en/master/). in the [`docs`](./docs) folder.
+
+```console
+make html
+```
+
 ## Usage
 
 ```python
@@ -78,8 +86,7 @@ scan.bps = bps
 raw = open_path("acquisition.raw", "acquisition.hraw", blockStart=1, blockEnd=1)
 ```
 
-See the [documentation](https://iconeus.github.io/PyIconeus/) and the
-[`examples`](./examples) notebooks for more complete examples.
+See the [`examples`](./examples) notebooks for more complete examples.
 
 `open_path` determines the model from the lowercase filename extension. It
 raises `FileNotFoundError` for missing paths, `ValueError` for unsupported
