@@ -63,24 +63,23 @@ def _fix_multiarray_probe(
         -probe_range / 2, probe_range / 2, data.shape[1]
     )
 
-    if time.ndim == 1:  # For Static MutliArray
+    if time.ndim == 1:
         time = time[:, None]
     time = np.repeat(time, data.shape[1], axis=1)
 
     if timeOriginal is not None:
-        if timeOriginal.ndim == 1:  # For Static MutliArray
+        if timeOriginal.ndim == 1:
             timeOriginal = timeOriginal[:, None]
         timeOriginal = np.repeat(timeOriginal, data.shape[1], axis=1)
-    # Each probe in the multi-array probe is considered a separate probe pose after
-    # reshaping because the probes are separated by 2.1 mm, i.e. way more than the slice
-    # width of ~400 µm.
+    # Move the multi-array slice axis into the pose axis before flattening it with cycles.
     transposed_axes = [0, 2, 3, 4, 1, 5]
     data = np.transpose(data, axes=transposed_axes[: data.ndim])[:, np.newaxis]
     data = data.reshape(
         data.shape[:4] + (data.shape[4] * data.shape[5],) + data.shape[6:]
     )
 
-    new_probe2lab = np.zeros((data.shape[4], 4, 4))  # ty:ignore[index-out-of-bounds]
+    # Create one probe-to-lab transform for every physical element of every pose.
+    new_probe2lab = np.zeros((data.shape[4], 4, 4))
     translation_affine = np.eye(4)
     for index, probe_slice_translation in enumerate(probe_slice_translations):
         translation_affine[1, 3] = probe_slice_translation
@@ -89,15 +88,13 @@ def _fix_multiarray_probe(
         )
 
     voxels2probe[1, 1] = 4e-4
-    voxels2probe[1, 3] = -np.floor(data.shape[1] / 2) * voxels2probe[1, 1]  # ty:ignore[index-out-of-bounds]
+    voxels2probe[1, 3] = -np.floor(data.shape[1] / 2) * voxels2probe[1, 1]
 
-    # IcoScan uses a heuristic to speed up probe movements, leading to disordered probe
-    # poses. Slices are thus sorted by increasing translation along the y-axis in the
-    # voxel space.
     rotations = new_probe2lab.copy()
     rotations[:, :3, 3] = 0
     y_translations = (np.linalg.inv(rotations) @ new_probe2lab)[:, 1, 3]
     sorting_indices = np.argsort(y_translations)
+    # Data and timing arrays must follow the same pose order as the transforms.
     data = data[:, :, :, :, sorting_indices, ...]
     time = time[:, sorting_indices]
     new_probe2lab = new_probe2lab[sorting_indices, ...]
@@ -139,14 +136,9 @@ def _fix_voxels2probe(voxels2probe: npt.NDArray, data_shape_z: int) -> npt.NDArr
     """
     voxels2probe = voxels2probe.copy()
 
-    # The voxels space in the SCAN format is defined following MATLAB's one-indexed
-    # convention. We need to add a one-voxel translation to get a zero-indexed voxels
-    # space.
     for i in range(3):
         voxels2probe[i, 3] += voxels2probe[i, i]
 
-    # PyIconeus flips data from SCAN files along the z-axis to get closer to an RAS+
-    # oriented volume.
     voxels2probe[2, 2] *= -1
     voxels2probe[2, 3] -= (data_shape_z - 1) * voxels2probe[2, 2]
 
@@ -214,40 +206,44 @@ def _deconvolve_probe_path(
     **center** : numpy.ndarray
         Array of center coordinates :math:`(x, y, z)`.
     """
-    # Transformation center is defined as the "average" translation.
-
     center = tforms[:, :3, 3].sum(axis=0) / tforms.shape[0]
     translation_to_center_tform = np.eye(4)
     translation_to_center_tform[:3, 3] = center
 
-    rotations = np.degrees(np.unique([mat2euler(m)[2] for m in tforms]))
-
-    # Translations are what's left after "removing" the translation to center
-    # and the rotations from the original affine transformations.
+    angles = np.asarray([mat2euler(matrix)[2] for matrix in tforms])
+    # Group nearly identical rotations to avoid creating poses from float noise.
+    rotation_angles: list[float] = []
+    rotation_indices: list[int] = []
+    for angle in angles:
+        matching_rotation = next(
+            (
+                index
+                for index, rotation in enumerate(rotation_angles)
+                if np.isclose(angle, rotation, atol=1e-6, rtol=0)
+            ),
+            None,
+        )
+        if matching_rotation is None:
+            rotation_angles.append(float(angle))
+            rotation_indices.append(len(rotation_angles) - 1)
+        else:
+            rotation_indices.append(matching_rotation)
+    rotations = np.degrees(np.asarray(rotation_angles))
     translations = np.zeros((len(tforms),))
-    for rotation_index, rotation in enumerate(rotations):
+    for tform_index, rotation_index in enumerate(rotation_indices):
         rotation_tform = np.eye(4)
-        rotation_tform[:3, :3] = euler2mat(0, 0, np.radians(rotation))
+        rotation_tform[:3, :3] = euler2mat(0, 0, rotation_angles[rotation_index])
+        # Remove the common center and the rotation to isolate the pose translation.
+        translation_tform = (
+            np.linalg.inv(rotation_tform)
+            @ np.linalg.inv(translation_to_center_tform)
+            @ tforms[tform_index]
+        )
+        translations[tform_index] = translation_tform[1, 3]
 
-        n_translations = len(tforms) // len(rotations)
-        for translation_index in range(n_translations):
-            tform_index = translation_index + n_translations * rotation_index
-            translation_tform = (
-                np.linalg.inv(rotation_tform)
-                @ np.linalg.inv(translation_to_center_tform)
-                @ tforms[tform_index]
-            )
-            translations[tform_index] = translation_tform[1, 3]
-
-    # Round to 6 decimal places to prevent numerical instabilities: under 1e-6,
-    # we consider two translations to be the same.
     translations = translations.round(decimals=6)
-    # After rounding, we keep unique values without sorting them (np.unique sorts
-    # values).
     translations = translations[np.sort(np.unique(translations, return_index=True)[1])]
 
-    # Check if the decomposition makes sense: some numerical instabilities could lead to
-    # more translations and/or rotations retrieved.
     if len(translations) * len(rotations) != len(tforms):
         raise RuntimeError(
             "Could not decompose probe tforms into center, translations and rotations."
@@ -324,7 +320,6 @@ def consolidate_scan(
 
     voxels2probe = _fix_voxels2probe(voxels2probe, data.shape[2])
 
-    # Is multiarray
     if data.shape[1] == 4 and data.ndim > 4:
         data, time, _, probe2lab, timeOriginal = _fix_multiarray_probe(
             data, time, voxels2probe, probe2lab, timeOriginal
@@ -348,15 +343,16 @@ def consolidate_scan(
     translations, rotations, translation_to_center_tform = _deconvolve_probe_path(
         probe2lab
     )
-    voxDimDy = float(np.mean(np.diff(translations)))
+    pose_order: npt.NDArray = np.argsort(translations)
+    translations = translations[pose_order]
+    translation_steps: npt.NDArray = np.diff(translations)
+    if translation_steps.size == 0:
+        raise RuntimeError("At least two probe poses are required for consolidation.")
+    voxDimDy = float(np.mean(translation_steps))
 
     probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
     probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     for rotation_index, rotation in enumerate(rotations):
-        probe2lab[
-            rotation_index * len(rotations) : rotation_index * len(rotations)
-            + len(rotations)
-        ]
         tformTranslation = translationMatrix(0, np.mean(translations), 0)
         tformRotation = rotation_xyz((0.0, 0.0, np.radians(rotation)))
         translation_tform = (
@@ -365,31 +361,20 @@ def consolidate_scan(
         probe2labTranslation[rotation_index] = translation_tform.T[3][:3]
         probe2labRotation[rotation_index] = np.array([0.0, 0.0, np.radians(rotation)])
 
-    translation_steps: npt.NDArray = np.diff(translations)
-    # Rounding is necessary to avoid numerical errors when computing the consolidated
-    # affine.
     median_translation_step: npt.NDArray = np.round(
         np.median(translation_steps), decimals=6
     )
 
-    # Sort poses by increasing translation along the y-axis.
-    pose_order: npt.NDArray = np.argsort(translations)
-    translations = translations[pose_order]
-
-    # The precision of the motors is ~5 µm.
     if not np.allclose(translation_steps, median_translation_step, atol=5e-6, rtol=0):
-        # If poses aren't regularly spaced, consolidation is impossible.
         raise RuntimeError("Poses are irregularly spaced: consolidation is impossible.")
     elif median_translation_step < 1e-4 or median_translation_step > 1e-3:
-        # If the space separating poses is lower than 100 µm or larger than 1 mm, then
-        # it is safer to consider them independent.
         raise RuntimeError(
             f"Poses are regularly spaced, but with interval {median_translation_step} "
             "meters: pose-wise affine transformations cannot be collapsed."
         )
     data = data[(slice(None),) * data.ndim + (None,) * (6 - data.ndim)]
 
-    # can consider them as a single volume.
+    # Merge regularly spaced probe poses into the scan's spatial y-axis.
     data = np.transpose(data, axes=(0, 4, 1, 2, 3, 5))
     new_shape = (
         data.shape[0],
@@ -401,10 +386,9 @@ def consolidate_scan(
     )
     data = data.reshape(new_shape)
 
-    # Reordering by fancy indexing using the pose_order array will always lead to a
-    # copy.
     reordering_needed: bool = not all(pose_order == np.arange(len(translations)))
     if reordering_needed:
+        # Apply the pose ordering after the spatial axes have been merged.
         data = data[:, pose_order]
 
     time = time[:, pose_order].copy()
