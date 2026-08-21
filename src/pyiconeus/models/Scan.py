@@ -118,13 +118,25 @@ class Scan:
             self.subjectTag = hdf5_string_reader(metaData["Subject_tag"])
             self.sessionTag = hdf5_string_reader(metaData["Session_tag"])
             type: str = hdf5_string_reader(metaData["Type"])
-            self.type = ScanType.Source if type == "source" else ScanType.Proc
+            if type == "source":
+                self.type = ScanType.Source
+            elif type in {"processed", "proc"}:
+                self.type = ScanType.Proc
+            else:
+                raise ValueError(f"Unsupported scan type: {type!r}")
             self.username = hdf5_string_reader(metaData["User_name"])
             self.projectDescription = hdf5_string_reader(metaData["Comment"])
             acqMetaData: h5py.Dataset = f["acqMetaData"]
             self.matchAcquisitionMode(acqMetaData)
-            tmp = np.sort(acqMetaData["timeOriginal"][:], axis=0)
-            dt = float(tmp[1][0] - tmp[0][0])
+            time_original = np.asarray(acqMetaData["timeOriginal"][:]).reshape(-1)
+            integration_time = float(acqMetaData["voxDim"]["dt"][0][0])
+            dt = (
+                float(np.diff(np.sort(time_original))[0])
+                if time_original.size > 1
+                else integration_time
+            )
+            if dt == 0:
+                dt = integration_time
             dy: float | None = float(acqMetaData["voxDim"]["dy"][0][0])
             if not self.canBeConsolidated(f):
                 self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
@@ -222,6 +234,8 @@ class Scan:
             case "3DscanRCA":
                 self.acquisitionMode = AcquisitionMode._3DscanRCA
                 self.probe.probeType = Probe.ProbeType.RCA
+            case _:
+                raise ValueError(f"Unsupported acquisition mode: {_acquisitionMode!r}")
 
     def fill_default(self, f: h5py.Group) -> None:
         """
@@ -249,9 +263,7 @@ class Scan:
         self.depth = Depth()
         voxel2Probe = f["acqMetaData"]["voxelsToProbe"][:]
         self.depth.fill_default(voxel2Probe, self.sizeZ)
-        dzIcoBright = np.trunc(
-            1e8 * 1540 * 1e-6 / 12.5
-        )  # Mean speed of sound propagation in soft tissus by the probe frequency
+        dzIcoBright = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
         dzIcoPrime = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
         dzIcoRange = np.trunc(1e8 * 1540 * 1e-6 / 8.9290)
         dzIcoDeep = np.trunc(1e8 * 1540 * 1e-6 / 6.25)
@@ -292,7 +304,6 @@ class Scan:
         self.delayAfterTrigger = 0
         self.sequenceName = "default sequence"
 
-        # Scan Meta Data
         refDate = datetime(1970, 1, 1, 0, 0, 0, 0, pytz.utc)
         self.gender = GenderType.Undefined
         self.projectDescription = hdf5_string_reader(f["scanMetaData"]["Comment"])
@@ -326,17 +337,21 @@ class Scan:
 
         None
         """
+        neuroscan = neuroscan.strip()
         if neuroscan.startswith("Conexus Software version V"):
-            major = int(neuroscan[-3])
-            minor = int(neuroscan[-1])
-            patch = 0
+            version_text = neuroscan.removeprefix("Conexus Software version V")
         elif neuroscan.startswith("IcoScan version"):
-            major = int(neuroscan[-5])
-            minor = int(neuroscan[-3])
-            patch = int(neuroscan[-1])
+            version_text = neuroscan.removeprefix("IcoScan version").strip()
         else:
             self.icoScanVersion = None
             return
+        match = re.fullmatch(r"(\d+)\.(\d+)(?:\.(\d+))?", version_text)
+        if match is None:
+            self.icoScanVersion = None
+            return
+        major = int(match.group(1))
+        minor = int(match.group(2))
+        patch = int(match.group(3) or 0)
         self.icoScanVersion = IcoScanVersion(major, minor, patch)
 
     def canBeConsolidated(self, hdf5_data: h5py.Dataset) -> bool:
@@ -354,6 +369,7 @@ class Scan:
         bool
             Returns True if the scan can be consolidated, False otherwise
         """
+        data_shape = hdf5_data["Data"].shape
         if (
             self.acquisitionMode == AcquisitionMode._4DscanRCA
             or self.acquisitionMode == AcquisitionMode._3DscanRCA
@@ -377,17 +393,17 @@ class Scan:
             self.voxels = data
             return False
         elif (
-            hdf5_data["Data"][:].shape[1] == 4
-            and hdf5_data["Data"][:].shape[4] == 1
+            len(data_shape) > 4
+            and data_shape[1] == 4
+            and data_shape[4] == 1
             and self.acquisitionMode == AcquisitionMode._4DScan
         ):
             data = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 3, 2, 5, 1, 6, 4))
-            self.nPose = 4  # Size Y
+            self.nPose = 4
             self.sizeY = 1
-            self.measuredTimes = np.tile(
-                hdf5_data["acqMetaData"][:], (1, self.nPose)
-            ).tolist()
+            time_original = np.asarray(hdf5_data["acqMetaData"]["timeOriginal"][:])
+            self.measuredTimes = np.tile(time_original, (1, self.nPose)).tolist()
             self.probe.probeType = Probe.ProbeType.MultiArray
             self.voxels = data
             return False
@@ -512,7 +528,14 @@ class Scan:
                 * self.nPose
                 * self.dim6.count
             )
-            self.voxels = np.fromfile(f, dtype="d", count=dataSize)
+            if dataSize < 0:
+                raise ValueError("scan voxel count must be non-negative")
+            remaining_bytes = os.fstat(f.fileno()).st_size - f.tell()
+            if remaining_bytes < dataSize * np.dtype("<f8").itemsize:
+                raise OSError("binary scan voxel data is truncated")
+            self.voxels = np.fromfile(f, dtype="<f8", count=dataSize)
+            if self.voxels.size != dataSize:
+                raise OSError("binary scan voxel data is truncated")
             self.voxels = self.voxels.reshape(
                 (
                     self.sizeX,
@@ -843,12 +866,12 @@ class Probe:
     def __init__(self) -> None:
         self.name: str
         self.probeType: Probe.ProbeType
-        self.probeCentralFrequency: float
-        self.probePitch: float
-        self.probeElevationAperture: float
-        self.probeRadiusOfCurvature: float
-        self.probeNumberOfElements: float
-        self.probeModel: str
+        self.probeCentralFrequency: float | None
+        self.probePitch: float | None
+        self.probeElevationAperture: float | None
+        self.probeRadiusOfCurvature: float | None
+        self.probeNumberOfElements: int | None
+        self.probeModel: str | None
 
     def fill_default(self) -> None:
         """
@@ -864,19 +887,21 @@ class Probe:
 
         None
         """
-        if (
-            self.name == "IcoPrime"
-            or self.name == "unknown"
-            or self.name == "IcoPrime 4D MultiArray"
-        ):
+        self.probeCentralFrequency = None
+        self.probePitch = None
+        self.probeElevationAperture = None
+        self.probeNumberOfElements = None
+        self.probeModel = None
+        if self.name in {"IcoPrime", "unknown", "IcoPrime 4D MultiArray"}:
             self.probeCentralFrequency = 15.625
             self.probePitch = 0.11
             self.probeElevationAperture = 1.5
-            self.probeNumberOfElements = 128
-            self.probeModel = "2392"
-            if self.name == "IcoPrime 4D MultiArray":
-                self.probeNumberOfElements = 256
-                self.probeModel = "2390"
+            self.probeNumberOfElements = (
+                256 if self.name == "IcoPrime 4D MultiArray" else 128
+            )
+            self.probeModel = (
+                "2390" if self.name == "IcoPrime 4D MultiArray" else "2392"
+            )
         self.probeRadiusOfCurvature = 0
 
     def load_binary(self, f: BufferedReader) -> None:
