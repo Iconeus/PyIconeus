@@ -1,8 +1,15 @@
 import numpy as np
 import h5py
 import warnings
-from ..utils.utils import decryptData
+import os
+from numbers import Integral
+
+from ..utils.utils import decryptData, hdf5_string_reader
 from .Scan import Depth, VoxDim
+
+
+def _first_value(value: np.ndarray) -> float:
+    return float(np.asarray(value).reshape(-1)[0])
 
 
 class Raw:
@@ -25,7 +32,7 @@ class Raw:
         Attributes
         ----------
 
-        **transmitFraquency**: float
+        **transmitFrequency**: float
             The transmit frequency of the acquisition
 
         **prf**: float
@@ -67,56 +74,86 @@ class Raw:
 
         def __init__(self, fileheader) -> None:
             with h5py.File(fileheader, "r") as h5:
-                self.transmitFrequency: float = float(decryptData(h5["F1"], 1)[0])
-                self.prf: float = float(decryptData(h5["F2"], 2)[0])
-                self.speedOfSound: float = float(decryptData(h5["F3"], 3)[0])
-                self.frameRate: float = float(decryptData(h5["F4"], 4)[0])
+                self.transmitFrequency: float = _first_value(decryptData(h5["F1"], 1))
+                self.prf: float = _first_value(decryptData(h5["F2"], 2))
+                self.speedOfSound: float = _first_value(decryptData(h5["F3"], 3))
+                self.frameRate: float = _first_value(decryptData(h5["F4"], 4))
                 self.receiveAperture: np.ndarray = decryptData(h5["F5"], 5)
                 self.flatAngles: np.ndarray = decryptData(h5["F7"], 7)
                 self.blockDim: np.ndarray = decryptData(h5["F9"], 9)
-                self.compound: bool = bool(decryptData(h5["F10"], 10)[0])
-                self.numberOfBlock: int = int(decryptData(h5["F11"], 11)[0])
-                self.acquisitionMode: str = h5["F13"][()][0][0].decode("utf-8")
+                self.compound: bool = bool(_first_value(decryptData(h5["F10"], 10)))
+                self.numberOfBlock: int = int(_first_value(decryptData(h5["F11"], 11)))
+                self.acquisitionMode: str = hdf5_string_reader(h5["F13"])
                 depthData: np.ndarray = decryptData(h5["F6"], 6)
                 voxDimData: np.ndarray = decryptData(h5["F8"], 8)
+                depth = np.asarray(depthData).reshape(-1)
+                if depth.size < 2:
+                    raise ValueError("RAW depth must contain two values")
                 self.depth = Depth()
-                self.depth.depthNear = depthData[0]
-                self.depth.depthFar = depthData[1]
-                self.voxDim = VoxDim(voxDimData[0], voxDimData[1], voxDimData[2])
-                self.isCrypted: bool = bool(decryptData(h5["F12"], 12)[0])
+                self.depth.depthNear = float(depth[0])
+                self.depth.depthFar = float(depth[1])
+                vox_dim = np.asarray(voxDimData).reshape(-1)
+                if vox_dim.size < 3:
+                    raise ValueError("RAW voxDim must contain three dimensions")
+                self.voxDim = VoxDim(vox_dim[0], vox_dim[1], vox_dim[2])
+                self.isCrypted: bool = bool(_first_value(decryptData(h5["F12"], 12)))
 
-    def __init__(self, filepath, file_header, blockStart=1, blockEnd=1) -> None:
+    def __init__(
+        self,
+        filepath: str,
+        file_header: str,
+        blockStart: int = 1,
+        blockEnd: int = 1,
+    ) -> None:
         self.metadata = Raw.MetaData(file_header)
-        nCompound: int = int(self.metadata.blockDim[3][0])
-        nFramesPerBlock: int = int(self.metadata.blockDim[4][0])
-        sizeX: int = int(self.metadata.blockDim[0][0])
-        sizeY: int = int(self.metadata.blockDim[1][0])
-        sizeZ: int = int(self.metadata.blockDim[2][0])
+        if (
+            not isinstance(blockStart, Integral)
+            or isinstance(blockStart, bool)
+            or not isinstance(blockEnd, Integral)
+            or isinstance(blockEnd, bool)
+        ):
+            raise TypeError("blockStart and blockEnd must be integers")
+        block_dimensions = np.asarray(self.metadata.blockDim).reshape(-1)
+        if block_dimensions.size < 5:
+            raise ValueError("RAW blockDim must contain five dimensions")
+        nCompound, nFramesPerBlock, sizeX, sizeY, sizeZ = tuple(
+            int(block_dimensions[index]) for index in (3, 4, 0, 1, 2)
+        )
+        if min(nCompound, nFramesPerBlock, sizeX, sizeY, sizeZ) <= 0:
+            raise ValueError("RAW dimensions must be positive")
+        if self.metadata.numberOfBlock <= 0:
+            raise ValueError("RAW numberOfBlock must be positive")
+        if blockEnd < blockStart:
+            raise RuntimeError("blockEnd must be greater or equal to blockStart")
+        if blockStart < 1 or blockStart > self.metadata.numberOfBlock:
+            raise ValueError("blockStart is outside the available RAW blocks")
+        if blockEnd > self.metadata.numberOfBlock:
+            warnings.warn(
+                "Passed blockEnd was greater than the total number of blocks; it was clamped.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+        blockEnd = min(blockEnd, self.metadata.numberOfBlock)
+        nBlockToSkip = blockStart - 1
+        nBlockToRead = blockEnd - nBlockToSkip
+        n_elements = int(
+            2 * sizeX * sizeY * sizeZ * nCompound * nFramesPerBlock * nBlockToRead
+        )
+        block_size = 2 * sizeX * sizeY * sizeZ * nCompound * nFramesPerBlock * 4
         with open(filepath, "rb") as f:
             if self.metadata.isCrypted:
                 f.seek(117)
-            nBlockToSkip: int = blockStart - 1
-            if nBlockToSkip > 0:
-                sizeToSkip: int = (
-                    nBlockToSkip * nFramesPerBlock * nCompound * sizeX * sizeZ * 2 * 4
+            f.seek(nBlockToSkip * block_size, 1)
+            expected_bytes = n_elements * np.dtype("<f4").itemsize
+            remaining_bytes = os.fstat(f.fileno()).st_size - f.tell()
+            if remaining_bytes < expected_bytes:
+                raise OSError(
+                    f"RAW file is truncated: expected {expected_bytes} data bytes, "
+                    f"found {max(remaining_bytes, 0)}"
                 )
-                f.seek(sizeToSkip, 1)
-            if blockEnd < blockStart:
-                raise RuntimeError("blockEnd must be greater or equal to blockStart")
-            if blockEnd > self.metadata.numberOfBlock:
-                warnings.warn(
-                    RuntimeWarning(
-                        "Raw init",
-                        "Passed blockEnd argument was greater than the total number of block. Automatically set to numberOfBlock",
-                    )
-                )
-            blockEnd: int = min(blockEnd, self.metadata.numberOfBlock)
-            nBlockToRead = blockEnd - nBlockToSkip
-
-            n_elements = int(
-                2 * sizeX * sizeY * sizeZ * nCompound * nFramesPerBlock * nBlockToRead
-            )
             iQt: np.ndarray = np.fromfile(f, dtype="<f4", count=n_elements)
+        if iQt.size != n_elements:
+            raise OSError(f"RAW file contains {iQt.size} values, expected {n_elements}")
         iQt: np.ndarray = iQt.reshape(
             (2, sizeZ, sizeY, sizeX, nCompound, nFramesPerBlock, nBlockToRead),
             order="F",
