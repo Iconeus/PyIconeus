@@ -196,23 +196,23 @@ name : str
 probeType : :class:`Probe.ProbeType <pyiconeus.models.Scan.Probe.ProbeType>`
     One of ``Linear``, ``MultiArray``, ``RCA``, ``Phased``, ``Matrix``.
 
-probeCentralFrequency : float
-    in Mhz
+probeCentralFrequency : float or None
+    Probe central frequency in MHz when available.
 
-probePitch : float
-    in millimeters
+probePitch : float or None
+    Probe pitch in millimeters when available.
 
-probeElevationAperture : float
-    in millimeters
+probeElevationAperture : float or None
+    Elevation aperture in millimeters when available.
 
 probeRadiusOfCurvature : float
     in millimeters
 
-probeNumberOfElements : float
-    One of `64`, `128`, `160`, `192`, `256`, `1024`
+probeNumberOfElements : int or None
+    Number of probe elements when available.
 
-probeModel : str
-    Serial number of the probe
+probeModel : str or None
+    Probe model or serial number when available.
 
 .. _depth-section:
 
@@ -240,7 +240,8 @@ Dim6Intent
 +++++++++++
 
 One of ``ClutterFiltering``, ``EnhancedDoppler``, ``VelocityBandFiltering``,
-``BrainMaskedDoppler``. *(TODO - describe each value.)*
+``BrainMaskedDoppler``. The corresponding intent-specific payload is exposed
+through ``dim6element`` when it is implemented by the binary reader.
 
 ClutterFiltering
 ++++++++++++++++++
@@ -256,7 +257,8 @@ VelocityBandwidthFiltering
 ++++++++++++++++++++++++++++
 
 velocityMin, velocityMax : float
-    *(TODO - specify the unit, e.g. mm/s.)*
+    Minimum and maximum velocity values as stored in the file. The reader does
+    not convert their unit.
 
 .. _icoscanversion-section:
 

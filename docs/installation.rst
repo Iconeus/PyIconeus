@@ -41,7 +41,7 @@ transforms3d. To install the test dependency as well from a source checkout:
 
 .. code-block:: console
 
-   python -m pip install -e ".[dependencies]"
+   python -m pip install -e ".[test]"
 
 Check the installation
 ------------------------

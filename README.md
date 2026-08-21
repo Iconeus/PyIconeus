@@ -92,7 +92,7 @@ Python 3.10 or newer is supported. Runtime dependencies are NumPy, pytz, h5py
 and transforms3d. Test dependencies are available with:
 
 ```console
-python -m pip install -e ".[dependencies]"
+python -m pip install -e ".[test]"
 ```
 
 ## License
