@@ -39,16 +39,16 @@ def hdf5_string_reader(hdf5_dataset: h5py.Dataset) -> str:
     str
         The decode string
     """
-    if h5py.check_string_dtype(hdf5_dataset.dtype).encoding == "utf-8":
-        bytes_data = hdf5_dataset[()]
-        strings = np.array(
-            [b.decode("ascii") for b in bytes_data.flat], dtype=object
-        ).reshape(bytes_data.shape)[0][0]
-    else:
-        # HDF5 ASCII strings
-        bytes_data = hdf5_dataset[()][:]
-        strings = str(bytes_data, "utf-8")
-    return strings
+    value = hdf5_dataset[()]
+    if isinstance(value, np.ndarray):
+        if value.size == 0:
+            return ""
+        value = value.reshape(-1)[0]
+    if isinstance(value, np.bytes_):
+        value = value.tobytes()
+    if isinstance(value, bytes):
+        return value.decode("utf-8").rstrip("\x00").strip()
+    return str(value).rstrip("\x00").strip()
 
 
 def hdf5_printer(hdf5_dataset: h5py.Dataset) -> None:
@@ -67,12 +67,11 @@ def hdf5_printer(hdf5_dataset: h5py.Dataset) -> None:
     None
     """
     print("HDF5 element:")
-    print("Shape: " + str(hdf5_dataset.shape[0]) + "," + str(hdf5_dataset.shape[1]))
-    print("Size: " + str(hdf5_dataset.size))
-    print("Ndim: " + str(hdf5_dataset.ndim))
-    print("Dtype: " + str(hdf5_dataset.dtype))
-    print("Nbytes: " + str(hdf5_dataset.nbytes))
-    print()
+    print(f"Shape: {hdf5_dataset.shape}")
+    print(f"Size: {hdf5_dataset.size}")
+    print(f"Ndim: {hdf5_dataset.ndim}")
+    print(f"Dtype: {hdf5_dataset.dtype}")
+    print(f"Nbytes: {hdf5_dataset.nbytes}")
 
 
 def read_string_binary(f: BufferedReader, format: str, bytes_size: int) -> str:
@@ -95,11 +94,10 @@ def read_string_binary(f: BufferedReader, format: str, bytes_size: int) -> str:
     str
         The resulted string of size 'bytes_size'
     """
-    stringSize = struct.unpack(format, f.read(bytes_size))[0]
-    string = ""
-    for _ in range(stringSize):
-        string += str(struct.unpack("@s", f.read(1))[0], encoding)
-    return string
+    string_size = struct.unpack(format, _read_exact(f, bytes_size))[0]
+    if string_size > _MAX_BINARY_STRING_SIZE:
+        raise ValueError(f"binary string is too large: {string_size} bytes")
+    return _read_exact(f, string_size).decode("utf-8").strip("\x00 ")
 
 
 def translationMatrix(dx: float, dy: float, dz: float) -> np.ndarray:
@@ -166,14 +164,15 @@ def decryptData(value: np.ndarray, n: int) -> np.ndarray:
     **nbr**: np.ndarray
         The decrypted value
     """
-    if value.shape[0] == 1:
-        nbrc: np.ndarray = np.asarray(value, dtype=float)[0]
+    value_array = np.asarray(value, dtype=float)
+    if value_array.size == 1:
+        nbrc: np.ndarray = value_array.reshape(-1)[0]
     else:
-        nbrc = np.asarray(value, dtype=float)
+        nbrc = value_array
     nbr: np.ndarray = nbrc.copy()
     if nbrc.ndim < 3:
         nbr = (nbrc - 72) / (1005 * n)
-    return nbr
+    return np.asarray(nbr)
 
 
 def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDArray:
