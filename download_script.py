@@ -1,3 +1,4 @@
+"""Developer utility: download IcoScan test data from Zenodo for the test suite."""
 import urllib.request
 import zipfile
 import os

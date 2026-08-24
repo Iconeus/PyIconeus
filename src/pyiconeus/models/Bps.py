@@ -1,4 +1,9 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import h5py
+import os
 import numpy as np
 
 from ..utils.utils import _read_struct
@@ -15,7 +20,7 @@ class Bps:
         The affine matrix
     """
 
-    def __init__(self, filepath: str, is_binary: bool = False) -> None:
+    def __init__(self, filepath: str | os.PathLike[str], is_binary: bool = False) -> None:
         if is_binary:
             with open(filepath, "rb") as f:
                 self.data: np.ndarray = np.ndarray(shape=(4, 4), dtype=float)
@@ -30,7 +35,7 @@ class Bps:
                     raise ValueError(
                         f"BrainToLab must have shape (4, 4), got {dataset.shape}"
                     )
-                self.data: np.ndarray = dataset[:]
+                self.data = dataset[:]
         if self.data.shape != (4, 4):
             raise ValueError(
                 f"BrainToLab must have shape (4, 4), got {self.data.shape}"

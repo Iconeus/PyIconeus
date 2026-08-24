@@ -1,5 +1,10 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import h5py
 import numpy as np
+import os
 from ..utils.utils import _read_struct, hdf5_string_reader, read_string_binary
 
 _MAX_ROI_COUNT = 100_000
@@ -27,7 +32,7 @@ class Roi:
         Each row contains the indices of the vertices composing a triangle of the volume
     """
 
-    def __init__(self, filepath: str, is_binary: bool):
+    def __init__(self, filepath: str | os.PathLike[str], is_binary: bool):
         self.list: list[RoiElements] = []
         if is_binary:
             with open(filepath, "rb") as f:
@@ -57,7 +62,7 @@ class Roi:
                         triangles[i][2] = _read_struct(f, "<L")
                     if triangles.size and triangles.max() >= vertices_count:
                         raise ValueError("ROI face index is outside the vertices array")
-                    color: tuple[float, float, float] = (
+                    color: tuple[float, ...] = (
                         float(_read_struct(f, "<f")),
                         float(_read_struct(f, "<f")),
                         float(_read_struct(f, "<f")),
@@ -105,7 +110,7 @@ class Roi:
 class RoiElements:
     def __init__(
         self,
-        color: tuple[float, float, float],
+        color: tuple[float, ...],
         vertices: np.ndarray,
         faces: np.ndarray,
         name: str,
@@ -113,7 +118,7 @@ class RoiElements:
         self.name: str = name
         self.vertices: np.ndarray = vertices
         self.faces: np.ndarray = faces
-        self.color: tuple[float, float, float] = color
+        self.color: tuple[float, ...] = color
 
     def __str__(self) -> str:
         return f"{self.name}:\n\tColor: {self.color}\n\tVertices Count: {len(self.vertices)}\n\tFaces count: {len(self.faces)}\n"

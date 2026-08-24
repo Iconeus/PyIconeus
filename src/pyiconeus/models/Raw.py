@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import numpy as np
 import h5py
 import warnings
@@ -65,8 +69,8 @@ class Raw:
         **numberOfBlock**: int
             Number of blocks
 
-        **isCrypted**: bool
-            Is the IQ crypted or not
+        **isEncrypted**: bool
+            Is the data encrypted or not
 
         **acquisitionMode**: *str*
             Type of acquisition
@@ -96,12 +100,12 @@ class Raw:
                 if vox_dim.size < 3:
                     raise ValueError("RAW voxDim must contain three dimensions")
                 self.voxDim = VoxDim(vox_dim[0], vox_dim[1], vox_dim[2])
-                self.isCrypted: bool = bool(_first_value(decryptData(h5["F12"], 12)))
+                self.isEncrypted: bool = bool(_first_value(decryptData(h5["F12"], 12)))
 
     def __init__(
         self,
-        filepath: str,
-        file_header: str,
+        filepath: str | os.PathLike[str],
+        file_header: str | os.PathLike[str],
         blockStart: int = 1,
         blockEnd: int = 1,
     ) -> None:
@@ -141,7 +145,7 @@ class Raw:
         )
         block_size = 2 * sizeX * sizeY * sizeZ * nCompound * nFramesPerBlock * 4
         with open(filepath, "rb") as f:
-            if self.metadata.isCrypted:
+            if self.metadata.isEncrypted:
                 f.seek(117)
             f.seek(nBlockToSkip * block_size, 1)
             expected_bytes = n_elements * np.dtype("<f4").itemsize
@@ -154,7 +158,7 @@ class Raw:
             iQt: np.ndarray = np.fromfile(f, dtype="<f4", count=n_elements)
         if iQt.size != n_elements:
             raise OSError(f"RAW file contains {iQt.size} values, expected {n_elements}")
-        iQt: np.ndarray = iQt.reshape(
+        iQt = iQt.reshape(
             (2, sizeZ, sizeY, sizeX, nCompound, nFramesPerBlock, nBlockToRead),
             order="F",
         )

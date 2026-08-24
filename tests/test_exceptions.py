@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import pytest
 import os
 from pyiconeus import open_path

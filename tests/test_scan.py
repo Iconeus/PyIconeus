@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import numpy as np
 from pytest import mark
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
@@ -61,7 +65,7 @@ def test_scan_values_ULM_2D():
     assert scan.nTime == 9
     assert scan.dim6.count == 1
     assert len(scan.measuredTimes) == 9
-    assert len(scan.theoricalTimeIndices) == 9
+    assert len(scan.theoreticalTimeIndices) == 9
     assert scan.acquisitionMode == AcquisitionMode._2DScan
     assert scan.probe.name == "IcoPrime"
     assert scan.weight == 0.0
@@ -148,7 +152,7 @@ def test_compare_acqMetaData():
     assert scanv2.nPose == 1
     assert scanv1.nTime == scanv2.nTime
     assert len(scanv1.measuredTimes) == len(scanv2.measuredTimes)
-    assert len(scanv1.theoricalTimeIndices) == len(scanv2.theoricalTimeIndices)
+    assert len(scanv1.theoreticalTimeIndices) == len(scanv2.theoreticalTimeIndices)
     assert scanv1.voxDim.dx == scanv2.voxDim.dx
     assert round(scanv1.voxDim.dy, 6) == round(scanv2.voxDim.dy, 6)
     assert scanv1.voxDim.dz == scanv2.voxDim.dz
@@ -179,7 +183,7 @@ def test_4DCustomScan():
     assert scanv2.nPose == 3
     assert scan.nTime == scanv2.nTime
     assert len(scan.measuredTimes) == len(scanv2.measuredTimes)
-    assert len(scan.theoricalTimeIndices) == len(scanv2.theoricalTimeIndices)
+    assert len(scan.theoreticalTimeIndices) == len(scanv2.theoreticalTimeIndices)
     assert scan.voxDim.dx == scanv2.voxDim.dx
     assert round(scan.voxDim.dy, 6) == round(scanv2.voxDim.dy, 6)
     assert scan.voxDim.dz == scanv2.voxDim.dz

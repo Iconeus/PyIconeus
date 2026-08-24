@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import numpy as np
 from pyiconeus.io.base import read_bri
 import pyiconeus

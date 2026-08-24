@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Functions to consolidate 3D and 3D+t scans."""
 
 import warnings
@@ -329,7 +333,9 @@ def consolidate_scan(
 
     if data.ndim < 5:
         warnings.warn(
-            RuntimeWarning("consolidation warn", "Scan has only one probe pose.")
+            "Scan has only one probe pose.",
+            category=RuntimeWarning,
+            stacklevel=2,
         )
         return (
             data,

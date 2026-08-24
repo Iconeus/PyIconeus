@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from io import BufferedReader
 import os
 import re
@@ -22,7 +26,90 @@ from ..models.Bps import Bps
 
 
 class Scan:
-    def __init__(self, filepath: str, is_binary: bool) -> None:
+    """IcoScan acquisition scan model (v1 HDF5 or v2 binary).
+
+    Reads, parses, and exposes metadata + voxel data from IcoScan scan files.
+    The ``open_path`` dispatcher auto-detects the file format from its extension.
+
+    Attributes
+    ----------
+    sizeX, sizeY, sizeZ : int
+        Spatial dimensions of the voxel grid.
+    nTime : int
+        Number of time frames per probe pose.
+    nPose : int
+        Number of probe poses.
+    measuredTimes : list[float]
+        Measured timestamps for each frame/pose combination.
+    theoreticalTimeIndices : list[int]
+        Theoretical (0-indexed) time indices computed from measured times.
+    probeToLabsTranslations : np.ndarray
+        Translation vectors for each probe pose, shape ``(nPose, 3)``.
+    probeToLabsRotations : np.ndarray
+        Euler angle rotations (x, y, z in radians) for each probe pose, shape ``(nPose, 3)``.
+    dim6 : Dim6
+        Dimensionality-6 processing options.
+    voxDim : VoxDim
+        Voxel and frame spacing information.
+    acquisitionMode : AcquisitionMode
+        Type of the acquired scan.
+    probe : Probe
+        Information about the ultrasound probe used.
+    depth : Depth
+        Near and far depth values.
+    ultrafastTransmitFrequency : float
+        Ultrafast transmit frequency in MHz.
+    pulseRepetitionFrequency : float
+        Pulse repetition frequency in kHz.
+    ultrafastSamplingFrequency : float
+        Sampling frequency of the raw channel data.
+    planeWaveAngles : list[float]
+        Plane wave angles used in the acquisition (degrees).
+    transmitVoltage : float
+        Transmit voltage in volts.
+    delayAfterTrigger : float
+        Delay after trigger, seconds.
+    isMultiplane : bool
+        Whether multi-plane imaging was used.
+    integrationWindowDuration : float
+        Integration window duration, seconds.
+    sequenceName : str
+        Ultrasound sequence name.
+    projectTag, subjectTag, sessionTag, scanTag : str
+        Identifying tags for the project and subject.
+    projectDescription : str
+        User comment / description of the acquisition.
+    species : str
+        Species of the subject (e.g., "Mouse").
+    gender : GenderType
+        Subject gender enum.
+    transferDate, acquisitionDate : datetime
+        Dates when data was acquired and transferred.
+    ageAtTransfer : int
+        Age at data transfer in days.
+    weight : float
+        Subject weight.
+    weightUnit : WeightUnitType
+        Unit of the subject weight.
+    treatment : str
+        Treatment description.
+    studyType, taskName, taskDescription : str
+        Experimental context metadata.
+    username : str
+        User who performed the acquisition.
+    type : ScanType
+        Whether this is a source or processed scan.
+    stimulationToggleTimes : list[float]
+        Times of external stimulation toggles (seconds).
+    icoScanVersion : IcoScanVersion | None
+        Version of the IcoScan software that acquired the data.
+    voxels : np.ndarray
+        The voxel data, typically ``(sizeX, sizeY, sizeZ, nTime, nPose, dim6.count)``.
+    bps : Bps | None
+        Optional Brain-to-Lab affine transform.
+    """
+
+    def __init__(self, filepath: str | os.PathLike[str], is_binary: bool) -> None:
         """Scan class constructor. Reads the input file depending of the type set in 'is_binary'.
         For scans v1 (not binary), the scan is filled with a lot of default values, matching the v2 format.
 
@@ -45,7 +132,7 @@ class Scan:
         self.nTime: int
         self.nPose: int
         self.measuredTimes: list[float] = []
-        self.theoricalTimeIndices: list[int] = []
+        self.theoreticalTimeIndices: list[int] = []
         self.probeToLabsTranslations: np.ndarray
         self.probeToLabsRotations: np.ndarray
         self.dim6: Dim6
@@ -90,7 +177,7 @@ class Scan:
         else:
             self.load_scan_hdf5(filepath)
 
-    def load_scan_hdf5(self, filepath: str) -> None:
+    def load_scan_hdf5(self, filepath: str | os.PathLike[str]) -> None:
         """
         V1 scan loading function
 
@@ -144,7 +231,7 @@ class Scan:
                 self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
                 self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
                 timeOriginal = acqMetaData["timeOriginal"][:]
-                self.theoricalTimeIndices = np.round((timeOriginal - dt) / dt)
+                self.theoreticalTimeIndices = np.round((timeOriginal - dt) / dt).astype(int).tolist()
                 probeToLabs = acqMetaData["probeToLab"][:]
                 if probeToLabs.ndim < 3:
                     probeToLabs = probeToLabs.reshape((1, 4, 4))
@@ -181,7 +268,7 @@ class Scan:
                 self.probeToLabsTranslations = probeTranslation
                 self.probeToLabsRotations = probeRotation
                 self.measuredTimes = time.reshape(-1).tolist()
-                self.theoricalTimeIndices = timeIndices.reshape(-1).tolist()
+                self.theoreticalTimeIndices = timeIndices.reshape(-1).tolist()
                 self.voxels = data
             self.integrationWindowDuration = float(acqMetaData["voxDim"]["dt"][0][0])
             self.voxDim = VoxDim()
@@ -195,8 +282,8 @@ class Scan:
         Parameters
         ----------
 
-        **acqMetaData**: hdf5.Dataset
-            The aqcuisition dataset
+        **acqMetaData**: h5py.Dataset
+            The acquisition dataset
 
         Returns
         -------
@@ -409,7 +496,7 @@ class Scan:
             return False
         return True
 
-    def load_scan_binary(self, filepath: str) -> None:
+    def load_scan_binary(self, filepath: str | os.PathLike[str]) -> None:
         """
         V2 scan loading function
 
@@ -445,7 +532,7 @@ class Scan:
             for _ in range(timeArraySize):
                 self.measuredTimes.append(_read_struct(f, "<d"))
             for _ in range(timeArraySize):
-                self.theoricalTimeIndices.append(_read_struct(f, "<L"))
+                self.theoreticalTimeIndices.append(_read_struct(f, "<L"))
                 self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
                 self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
             for i in range(self.nPose):
@@ -609,7 +696,7 @@ class Scan:
         rep = (
             f"sizeX: {self.sizeX}\nsizeY: {self.sizeY}\nsizeZ: {self.sizeZ}\nnTime: {self.nTime}\nnPose: {self.nPose}"
             f"\ndim6: {self.dim6}\nvoxDim: {self.voxDim}\nmeasuredTimes: {len(self.measuredTimes)} ({self.sizeY} * {self.nTime} * {self.nPose}) (sizeY * nTime * nPose)\n"
-            f"theoricalTimeIndices: {len(self.theoricalTimeIndices)} ({self.sizeY} * {self.nTime} * {self.nPose}) (sizeY * nTime * nPose)\n"
+            f"theoreticalTimeIndices: {len(self.theoreticalTimeIndices)} ({self.sizeY} * {self.nTime} * {self.nPose}) (sizeY * nTime * nPose)\n"
             f"probeToLabsTranslation: {self.probeToLabsTranslations}\nprobeToLabsRotations: {self.probeToLabsRotations}\n"
             f"acquisitionMode: {self.acquisitionMode.name[1:]}\nprobe: {self.probe}\ndepth: {self.depth}\n"
             f"ultrafastTransmitFrequency: {self.ultrafastTransmitFrequency}\npulseRepetitionFrequency: {self.pulseRepetitionFrequency}\n"
@@ -619,7 +706,7 @@ class Scan:
             rep += f"\t{i}: {self.planeWaveAngles[i]}\n"
         rep += (
             f"transmitVoltage: {self.transmitVoltage}\ndelayAfterTrigger: {self.delayAfterTrigger}\nisMultiplane: {self.isMultiplane}\n"
-            f"integrationWindowDuration: {self.integrationWindowDuration}\nsequenceName: {self.sequenceName}\nprojecTag: {self.projectTag}\n"
+            f"integrationWindowDuration: {self.integrationWindowDuration}\nsequenceName: {self.sequenceName}\nprojectTag: {self.projectTag}\n"
             f"projectDescription: {self.projectDescription}\nsubjectTag: {self.subjectTag}\nsessionTag: {self.sessionTag}\nspecies: {self.species}\n"
             f"gender: {self.gender.name}\ntransferDate: {self.transferDate}\nageAtTransfer: {self.ageAtTransfer}\nsubjectDescription: {self.subjectDescription}\n"
             f"weight: {self.weight}{self.weightUnit.name}\ntreatment: {self.treatment}\nscanTag: {self.scanTag}\nstudyType: {self.studyType}\n"
