@@ -33,6 +33,17 @@ dependencies = [
 [project.optional-dependencies]
 test = [
  "pytest>=8",
+ "requests",
+]
+example = [
+  "matplotlib",
+  "scipy",
+  "ipywidgets",
+  "ipympl",
+]
+doc = [
+  "sphinx",
+  "sphinx-book-theme",
 ]
 
 [project.urls]

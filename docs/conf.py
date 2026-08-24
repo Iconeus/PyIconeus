@@ -33,6 +33,7 @@ extensions = [
     "sphinx.ext.autosummary",   # Auto-generate one reference page per module/class
     "sphinx.ext.viewcode",      # Add links to the highlighted source code
     "sphinx.ext.intersphinx",   # Link out to numpy/h5py/python documentation
+    "sphinx_book_theme",
 ]
 
 
