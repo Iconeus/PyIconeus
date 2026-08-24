@@ -61,8 +61,8 @@ compound : bool
 numberOfBlock : int
     Number of blocks
 
-isCrypted : bool
-	Is the IQ crypted or not
+isEncrypted : bool
+    True if the data is encrypted, False otherwise
 
 Block selection
 ---------------

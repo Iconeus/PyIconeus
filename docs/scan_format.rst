@@ -139,7 +139,7 @@ dim6 : :class:`~pyiconeus.models.Scan.Dim6`
 measuredTimes : list[float]
     List containing the times of every acquired block
 
-theoricalTimeIndices : list[int]
+theoreticalTimeIndices : list[int]
     Indices of the measuredTimes list
 
 probeToLabsTranslations : numpy.ndarray
