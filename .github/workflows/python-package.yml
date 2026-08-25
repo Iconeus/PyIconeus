@@ -11,7 +11,10 @@ on:
 
 jobs:
   prepare-data:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v5
     - name: Set up Python
@@ -34,11 +37,13 @@ jobs:
 
   build:
     needs: prepare-data
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v5
