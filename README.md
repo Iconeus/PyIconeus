@@ -34,7 +34,7 @@ You can create a virtual environment using uv:
 
 ```console
 uv venv
-   .venv/Scripts/activate       # Windows
+   .venv/Scripts/activate.ps1   # Windows
    source .venv/bin/activate    # Linux/macOS
 ```
 
@@ -53,15 +53,32 @@ python -m pip install pyiconeus
 
 Or with the sources:
 ```console
-python -m pip install -e .
+uv pip install -e .
 ```
 
-3. Check the installation
+3. Install other dependencies
 
 Run the tests (the repository test data must be present):
 
 ```console
+uv pip install -e ".[test]"
+```
+
+Check the installation:
+
+```console
 pytest
+```
+
+To run the examples:
+
+```console
+uv pip install -e ".[example]"
+```
+
+To build the doc:
+```console
+uv pip install -e ".[doc]"
 ```
 
 ## Documentation
@@ -96,10 +113,12 @@ not readable or has invalid content.
 ## Requirements
 
 Python 3.10 or newer is supported. Runtime dependencies are NumPy, pytz, h5py
-and transforms3d. Test dependencies are available with:
+and transforms3d.
+
+To install all optional dependencies, run the following:
 
 ```console
-python -m pip install -e ".[test]"
+uv pip install -e ".[test,doc,example]"
 ```
 
 ## License
