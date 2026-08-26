@@ -14,6 +14,15 @@ from transforms3d.euler import euler2mat, mat2euler
 from .utils import rotation_xyz, translationMatrix
 
 
+def theoretical_time_indices(
+    time_original: npt.NDArray,
+    dt: float,
+    reference_time: float,
+) -> npt.NDArray:
+    """Calculate zero-based theoretical indices from original acquisition times."""
+    return np.round((time_original - reference_time) / dt).astype(int)
+
+
 def _fix_multiarray_probe(
     data: npt.NDArray,
     time: npt.NDArray,
@@ -400,14 +409,16 @@ def consolidate_scan(
     time = time[:, pose_order].copy()
 
     timeOriginal = timeOriginal[:, pose_order].copy()
-    theoretical_time_indices: npt.NDArray = np.round(
-        (timeOriginal - integrationTime) / dt
+    theoretical_indices: npt.NDArray = theoretical_time_indices(
+        timeOriginal,
+        dt,
+        integrationTime,
     )
 
     return (
         data,
         time,
-        theoretical_time_indices,
+        theoretical_indices,
         probe2labTranslation,
         -probe2labRotation,
         voxDimDy,

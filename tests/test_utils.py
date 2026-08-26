@@ -10,6 +10,7 @@ from pyiconeus.utils.utils import (
     inverse_rotation_xyz,
     rotation_xyz,
 )
+from pyiconeus.utils.consolidation import theoretical_time_indices
 
 
 def test_hdf5_printer():
@@ -68,6 +69,14 @@ def test_inverse_rotation_matrix():
     )
     assert np.allclose(
         inverse_rotation_xyz(gimballNeg), np.array((0.5, -1.57079633, 0.0))
+    )
+
+
+def test_theoretical_time_indices():
+    times = np.array([0.01, 0.02, 0.03])
+
+    assert np.array_equal(
+        theoretical_time_indices(times, 0.01, 0.01), np.array([0, 1, 2])
     )
 
     eul = np.array((np.radians(45), np.radians(30), np.radians(60)))

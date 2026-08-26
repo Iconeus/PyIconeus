@@ -20,7 +20,7 @@ from ..utils.utils import (
     inverse_rotation_xyz,
     _read_struct,
 )
-from ..utils.consolidation import consolidate_scan
+from ..utils.consolidation import consolidate_scan, theoretical_time_indices
 
 from ..models.Bps import Bps
 
@@ -230,7 +230,9 @@ class Scan:
                 self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
                 self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
                 timeOriginal = acqMetaData["timeOriginal"][:]
-                self.theoreticalTimeIndices = np.round((timeOriginal - dt) / dt).astype(int).tolist()
+                self.theoreticalTimeIndices = theoretical_time_indices(
+                    timeOriginal, dt, dt
+                ).tolist()
                 probeToLabs = acqMetaData["probeToLab"][:]
                 if probeToLabs.ndim < 3:
                     probeToLabs = probeToLabs.reshape((1, 4, 4))
