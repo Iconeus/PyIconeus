@@ -151,23 +151,25 @@ def scale_matrix(sx: float, sy: float, sz: float) -> np.ndarray:
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
 
 
-def decrypt_data(value: np.ndarray, n: int) -> np.ndarray:
+def decode_legacy_value(value: np.ndarray, n: int) -> np.ndarray:
     """
-    Util function to decrypt raw data that have been encrypted in first versions of '.raw' files
+    Decode a value from the legacy offset-based encoding used by early
+    versions of '.raw' files. This was a data-obfuscation scheme, not a
+    security or encryption mechanism; it is only kept to read old files.
 
     Parameters
     ----------
 
     **value**: np.ndarray
-        The crypted value
+        The legacy-encoded value
     **n**: int
-        The index of the element in the hdf5 to be decrypted
+        The index of the element in the hdf5 to decode
 
     Returns
     -------
 
     **nbr**: np.ndarray
-        The decrypted value
+        The decoded value
     """
     value_array = np.asarray(value, dtype=float)
     if value_array.size == 1:
