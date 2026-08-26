@@ -50,10 +50,10 @@ def verify_file(record_id, filepath, filename):
     print(f"MD5 Local  : {local_md5}")
 
     if local_md5.lower() == expected_md5.lower():
-        print("Sucess")
+        print("Success")
         return True
     else:
-        print("Error : checksums doesn't match")
+        print("Error : checksums do not match")
         return False
 
 

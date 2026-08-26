@@ -89,13 +89,13 @@ depth : :class:`~pyiconeus.models.Scan.Depth`
     Depth far and near of the acquisition, see the :ref:`depth-section` *section below*
 
 ultrafastTransmitFrequency : float
-    Frequency of the transmit, in Mhz
+    Frequency of the transmit, in MHz
 
 pulseRepetitionFrequency : float
     Frequency of pulse repetition, in Mhz
 
 ultrafastSamplingFrequency : float
-    Frequency of the ultra fast sampling, in Mhz
+    Frequency of the ultra fast sampling, in MHz
 
 planeWaveAngles : list[float]
     List of the plane waves angles
@@ -166,7 +166,7 @@ icoScanVersion : :class:`~pyiconeus.models.Scan.IcoScanVersion` | None
     ``None`` for old scans.
 
 bps : :class:`~pyiconeus.models.Bps.Bps`
-    Placeholder for a BPS element. Its the Brain Positioning System for a specific scan
+    Placeholder for a BPS element. It's the Brain Positioning System for a specific scan
 
 .. _voxdim-section:
 

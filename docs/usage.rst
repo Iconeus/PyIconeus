@@ -13,7 +13,7 @@ format has a magic header (``.scan``, ``.bps`` and ``.bri``).
    from pyiconeus import open_path, Scan, Bps
 
    scan: Scan = open_path("my_acquisition.scan")
-    print(scan.voxels.shape)  # (sizeX, sizeY, sizeZ, nTime, nPose, dim6)
+   print(scan.voxels.shape)  # (sizeX, sizeY, sizeZ, nTime, nPose, dim6)
 
    bps: Bps = open_path("my_acquisition.bps")
    print(bps.data)
@@ -29,10 +29,10 @@ block numbers. By default only block 1 is loaded.
 
    from pyiconeus import open_path, Raw
 
-    raw: Raw = open_path("acquisition.raw", "acquisition.hraw")
-    raw_subset: Raw = open_path(
-        "acquisition.raw", "acquisition.hraw", blockStart=2, blockEnd=4
-    )
+   raw: Raw = open_path("acquisition.raw", "acquisition.hraw")
+   raw_subset: Raw = open_path(
+       "acquisition.raw", "acquisition.hraw", blockStart=2, blockEnd=4
+   )
 
 Region of interest (``.bri``) files load a list of
 :class:`~pyiconeus.models.Roi.RoiElements`, each carrying a name, an RGB
@@ -46,8 +46,8 @@ HDF5 files that store MATLAB-style one-based indices:
 
    roi: Roi = open_path("atlas.bri")
    for element in roi.list:
-        print(element.name, element.color)
-        print(element.vertices.shape, element.faces.shape)
+       print(element.name, element.color)
+       print(element.vertices.shape, element.faces.shape)
 
 ``.bps`` files expose their 4x4 Brain-to-Lab transform as ``bps.data``. A BPS
 object is not automatically associated with a scan; assign it explicitly as

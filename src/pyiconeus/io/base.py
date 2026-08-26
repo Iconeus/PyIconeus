@@ -91,7 +91,7 @@ def open_path(
     blockEnd: int = 1,
 ) -> Scan | Bps | Roi | Raw:
     """Main IO function.
-    Checks if the file exist, then dispatch the path in the correct function.
+    Checks if the file exists, then dispatches the path to the correct function.
 
     Last three parameters are optional for all files types except '.raw' files which needs to be paired with their corresponding '.hraw' file in the path2 parameter
 
@@ -110,7 +110,7 @@ def open_path(
     Returns
     -------
 
-    PyIconeus object depending of the given file
+    PyIconeus object depending on the given file
     """
     path = os.fspath(path)
     path2 = os.fspath(path2) if path2 is not None else None

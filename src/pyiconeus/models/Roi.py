@@ -16,7 +16,7 @@ _MAX_MESH_ELEMENTS = 10_000_000
 class Roi:
     """
     Region of Interest are 3D shapes, from an Atlas or created by the user.
-    The Roi call contains a list of RoiElements.
+    The Roi class contains a list of RoiElements.
 
     Attributes
     ----------
