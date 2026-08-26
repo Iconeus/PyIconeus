@@ -25,6 +25,7 @@ Supported formats:
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
@@ -122,6 +123,11 @@ See the [`examples`](./examples) notebooks for more complete examples.
 raises `FileNotFoundError` for missing paths, `ValueError` for unsupported
 extensions or invalid RAW arguments, and may raise `OSError` when a file is
 not readable or has invalid content.
+
+## Contributing
+
+Development setup, validation commands, branch policy, and pull request
+guidance are available in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Requirements
 
