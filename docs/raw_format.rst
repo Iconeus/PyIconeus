@@ -62,8 +62,9 @@ numberOfBlock : int
     Number of blocks
 
 isLegacyFormat : bool
-    True if the file uses the legacy metadata encoding and binary layout
-    from early ``.raw`` files, False otherwise
+    True if the raw data block uses the legacy encryption scheme (a
+    byte-offset shift) applied to early ``.raw`` acquisitions, False
+    otherwise
 
 Block selection
 ---------------

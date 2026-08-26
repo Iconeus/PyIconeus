@@ -9,7 +9,7 @@ from pytest import mark
 import pyiconeus
 from pyiconeus import Raw
 from pyiconeus.models.Scan import Depth, VoxDim
-from pyiconeus.utils.utils import decode_legacy_value
+from pyiconeus.utils.utils import decrypt_data
 
 
 def test_read_raw():
@@ -22,12 +22,12 @@ def test_raw_val():
     metadata: pyiconeus.Raw.MetaData = pyiconeus.Raw.MetaData(
         "./tests/data" + "/2DScan_v2.hraw"
     )
-    metadata.transmitFrequency = float(decode_legacy_value(np.array([15775.125]), 1))
-    metadata.prf = float(decode_legacy_value(np.array([22110072]), 2))
-    metadata.speedOfSound = float(decode_legacy_value(np.array([4643172]), 3))
-    metadata.frameRate = float(decode_legacy_value(np.array([4020072]), 4))
-    metadata.receiveAperture = decode_legacy_value(np.array([5097, 643272]), 5)
-    metadata.flatAngles = decode_legacy_value(
+    metadata.transmitFrequency = float(decrypt_data(np.array([15775.125]), 1))
+    metadata.prf = float(decrypt_data(np.array([22110072]), 2))
+    metadata.speedOfSound = float(decrypt_data(np.array([4643172]), 3))
+    metadata.frameRate = float(decrypt_data(np.array([4020072]), 4))
+    metadata.receiveAperture = decrypt_data(np.array([5097, 643272]), 5)
+    metadata.flatAngles = decrypt_data(
         np.array(
             [
                 -70278,
@@ -45,14 +45,14 @@ def test_raw_val():
         ),
         7,
     )
-    metadata.blockDim = decode_legacy_value(
+    metadata.blockDim = decrypt_data(
         np.array([1157832, 9117, 823167, 9117, 3618072]), 9
     )
-    metadata.compound = bool(decode_legacy_value(np.array([10122]), 10))
-    metadata.numberOfBlock = int(decode_legacy_value(np.array([99567]), 11))
+    metadata.compound = bool(decrypt_data(np.array([10122]), 10))
+    metadata.numberOfBlock = int(decrypt_data(np.array([99567]), 11))
     metadata.acquisitionMode = "2Dscan"
-    depthData = decode_legacy_value(np.array([6102, 60372]), 6)
-    voxDimData = decode_legacy_value(np.array([956.4, 3288, 864.4223999999999]), 8)
+    depthData = decrypt_data(np.array([6102, 60372]), 6)
+    voxDimData = decrypt_data(np.array([956.4, 3288, 864.4223999999999]), 8)
     metadata.depth = Depth()
     metadata.depth.depthNear = depthData[0]
     metadata.depth.depthFar = depthData[1]
@@ -88,22 +88,22 @@ def test_raw_block_offset_with_multiple_rows(tmp_path):
     header_path = tmp_path / "sample.hraw"
     raw_path = tmp_path / "sample.raw"
 
-    def encode_legacy_value(values, index):
+    def encrypt(values, index):
         return np.asarray(values, dtype=float) * (1005 * index) + 72
 
     with h5py.File(header_path, "w") as header:
-        header.create_dataset("F1", data=encode_legacy_value([[1]], 1))
-        header.create_dataset("F2", data=encode_legacy_value([[2]], 2))
-        header.create_dataset("F3", data=encode_legacy_value([[3]], 3))
-        header.create_dataset("F4", data=encode_legacy_value([[4]], 4))
-        header.create_dataset("F5", data=encode_legacy_value([[1, 2]], 5))
-        header.create_dataset("F6", data=encode_legacy_value([[1, 2]], 6))
-        header.create_dataset("F7", data=encode_legacy_value([[1, 2]], 7))
-        header.create_dataset("F8", data=encode_legacy_value([[1, 2, 3]], 8))
-        header.create_dataset("F9", data=encode_legacy_value([[2, 2, 1, 1, 1]], 9))
-        header.create_dataset("F10", data=encode_legacy_value([[1]], 10))
-        header.create_dataset("F11", data=encode_legacy_value([[2]], 11))
-        header.create_dataset("F12", data=encode_legacy_value([[0]], 12))
+        header.create_dataset("F1", data=encrypt([[1]], 1))
+        header.create_dataset("F2", data=encrypt([[2]], 2))
+        header.create_dataset("F3", data=encrypt([[3]], 3))
+        header.create_dataset("F4", data=encrypt([[4]], 4))
+        header.create_dataset("F5", data=encrypt([[1, 2]], 5))
+        header.create_dataset("F6", data=encrypt([[1, 2]], 6))
+        header.create_dataset("F7", data=encrypt([[1, 2]], 7))
+        header.create_dataset("F8", data=encrypt([[1, 2, 3]], 8))
+        header.create_dataset("F9", data=encrypt([[2, 2, 1, 1, 1]], 9))
+        header.create_dataset("F10", data=encrypt([[1]], 10))
+        header.create_dataset("F11", data=encrypt([[2]], 11))
+        header.create_dataset("F12", data=encrypt([[0]], 12))
         header.create_dataset("F13", data=np.asarray([[b"2Dscan"]]))
 
     block = np.zeros((2, 1, 2, 2, 1, 1, 1), dtype="<f4", order="F")

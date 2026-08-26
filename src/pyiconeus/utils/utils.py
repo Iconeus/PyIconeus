@@ -30,7 +30,7 @@ def _read_struct(stream: BufferedReader, format: str):
 
 def hdf5_string_reader(hdf5_dataset: h5py.Dataset) -> str:
     """
-    Util function used to read an HDF5 string element depending of the internal type
+    Util function used to read an HDF5 string element depending on the internal type
 
     Parameters
     ----------
@@ -151,25 +151,23 @@ def scale_matrix(sx: float, sy: float, sz: float) -> np.ndarray:
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
 
 
-def decode_legacy_value(value: np.ndarray, n: int) -> np.ndarray:
+def decrypt_data(value: np.ndarray, n: int) -> np.ndarray:
     """
-    Decode a value from the legacy offset-based encoding used by early
-    versions of '.raw' files. This was a data-obfuscation scheme, not a
-    security or encryption mechanism; it is only kept to read old files.
+    Util function to decrypt raw data that have been encrypted in first versions of '.raw' files
 
     Parameters
     ----------
 
     **value**: np.ndarray
-        The legacy-encoded value
+        The crypted value
     **n**: int
-        The index of the element in the hdf5 to decode
+        The index of the element in the hdf5 to be decrypted
 
     Returns
     -------
 
     **nbr**: np.ndarray
-        The decoded value
+        The decrypted value
     """
     value_array = np.asarray(value, dtype=float)
     if value_array.size == 1:

@@ -9,7 +9,7 @@ from numbers import Integral
 import h5py
 import numpy as np
 
-from ..utils.utils import decode_legacy_value, hdf5_string_reader
+from ..utils.utils import decrypt_data, hdf5_string_reader
 from .Scan import Depth, VoxDim
 
 
@@ -71,8 +71,9 @@ class Raw:
             Number of blocks
 
         **isLegacyFormat**: bool
-            True if the file uses the legacy metadata encoding and binary
-            layout from early '.raw' files, False otherwise
+            True if the raw data block uses the legacy encryption scheme
+            (a byte-offset shift) applied to early '.raw' acquisitions,
+            False otherwise
 
         **acquisitionMode**: *str*
             Type of acquisition
@@ -80,26 +81,18 @@ class Raw:
 
         def __init__(self, fileheader) -> None:
             with h5py.File(fileheader, "r") as h5:
-                self.transmitFrequency: float = _first_value(
-                    decode_legacy_value(h5["F1"], 1)
-                )
-                self.prf: float = _first_value(decode_legacy_value(h5["F2"], 2))
-                self.speedOfSound: float = _first_value(
-                    decode_legacy_value(h5["F3"], 3)
-                )
-                self.frameRate: float = _first_value(decode_legacy_value(h5["F4"], 4))
-                self.receiveAperture: np.ndarray = decode_legacy_value(h5["F5"], 5)
-                self.flatAngles: np.ndarray = decode_legacy_value(h5["F7"], 7)
-                self.blockDim: np.ndarray = decode_legacy_value(h5["F9"], 9)
-                self.compound: bool = bool(
-                    _first_value(decode_legacy_value(h5["F10"], 10))
-                )
-                self.numberOfBlock: int = int(
-                    _first_value(decode_legacy_value(h5["F11"], 11))
-                )
+                self.transmitFrequency: float = _first_value(decrypt_data(h5["F1"], 1))
+                self.prf: float = _first_value(decrypt_data(h5["F2"], 2))
+                self.speedOfSound: float = _first_value(decrypt_data(h5["F3"], 3))
+                self.frameRate: float = _first_value(decrypt_data(h5["F4"], 4))
+                self.receiveAperture: np.ndarray = decrypt_data(h5["F5"], 5)
+                self.flatAngles: np.ndarray = decrypt_data(h5["F7"], 7)
+                self.blockDim: np.ndarray = decrypt_data(h5["F9"], 9)
+                self.compound: bool = bool(_first_value(decrypt_data(h5["F10"], 10)))
+                self.numberOfBlock: int = int(_first_value(decrypt_data(h5["F11"], 11)))
                 self.acquisitionMode: str = hdf5_string_reader(h5["F13"])
-                depthData: np.ndarray = decode_legacy_value(h5["F6"], 6)
-                voxDimData: np.ndarray = decode_legacy_value(h5["F8"], 8)
+                depthData: np.ndarray = decrypt_data(h5["F6"], 6)
+                voxDimData: np.ndarray = decrypt_data(h5["F8"], 8)
                 depth = np.asarray(depthData).reshape(-1)
                 if depth.size < 2:
                     raise ValueError("RAW depth must contain two values")
@@ -111,7 +104,7 @@ class Raw:
                     raise ValueError("RAW voxDim must contain three dimensions")
                 self.voxDim = VoxDim(vox_dim[0], vox_dim[1], vox_dim[2])
                 self.isLegacyFormat: bool = bool(
-                    _first_value(decode_legacy_value(h5["F12"], 12))
+                    _first_value(decrypt_data(h5["F12"], 12))
                 )
 
     def __init__(
