@@ -225,10 +225,9 @@ class Scan:
             if dt == 0:
                 dt = integration_time
             dy: float | None = float(acqMetaData["voxDim"]["dy"][0][0])
-            if not self.canBeConsolidated(f):
+            if not self.can_be_consolidated(f):
+                self._load_nonconsolidated_data(f)
                 self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
-                self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
-                self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
                 self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
                 timeOriginal = acqMetaData["timeOriginal"][:]
                 self.theoreticalTimeIndices = np.round((timeOriginal - dt) / dt).astype(int).tolist()
@@ -441,9 +440,9 @@ class Scan:
         patch = int(match.group(3) or 0)
         self.icoScanVersion = IcoScanVersion(major, minor, patch)
 
-    def canBeConsolidated(self, hdf5_data: h5py.Dataset) -> bool:
+    def can_be_consolidated(self, hdf5_data: h5py.Dataset) -> bool:
         """
-        Check consolidation requirements. If it cannot be consolidated, do the appropriate modification to the element based on the acquisition mode
+        Check whether the HDF5 data can use the regular consolidation path.
 
         Parameters
         ----------
@@ -454,18 +453,31 @@ class Scan:
         Returns
         -------
         bool
-            Returns True if the scan can be consolidated, False otherwise
+            Returns True if the scan can be consolidated, False otherwise.
         """
         data_shape = hdf5_data["Data"].shape
         if (
             self.probe.probeType == Probe.ProbeType.RCA
+            or self.acquisitionMode == AcquisitionMode.fUS3DCustom
+            or (
+                len(data_shape) > 4
+                and data_shape[1] == 4
+                and data_shape[4] == 1
+                and self.acquisitionMode == AcquisitionMode.fUS3D
+            )
         ):
+            return False
+        return True
+
+    def _load_nonconsolidated_data(self, hdf5_data: h5py.Dataset) -> None:
+        """Load HDF5 layouts that do not use regular consolidation."""
+        data_shape = hdf5_data["Data"].shape
+        if self.probe.probeType == Probe.ProbeType.RCA:
             data = hdf5_data["Data"][:].T
             time = hdf5_data["acqMetaData"]["timeOriginal"][:]
             self.measuredTimes = np.tile(time, (data.shape[1], 1)).tolist()
             self.probe.probeType = Probe.ProbeType.RCA
             self.voxels = data
-            return False
         elif self.acquisitionMode == AcquisitionMode.fUS3DCustom:
             data = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 1, 2, 5, 4, 3))
@@ -477,7 +489,6 @@ class Scan:
             self.measuredTimes = np.reshape(time, (nPose * blockRepeat)).tolist()
             self.probe.probeType = Probe.ProbeType.Linear
             self.voxels = data
-            return False
         elif (
             len(data_shape) > 4
             and data_shape[1] == 4
@@ -492,8 +503,6 @@ class Scan:
             self.measuredTimes = np.tile(time_original, (1, self.nPose)).tolist()
             self.probe.probeType = Probe.ProbeType.MultiArray
             self.voxels = data
-            return False
-        return True
 
     def load_scan_binary(self, filepath: str | os.PathLike[str]) -> None:
         """
