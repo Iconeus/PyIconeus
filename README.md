@@ -1,8 +1,11 @@
 # PyIconeus
 
 [![NumPy](https://img.shields.io/badge/NumPy-4DABCF?logo=numpy&logoColor=fff)]()
-[![Pytest](https://img.shields.io/badge/Pytest-fff?logo=pytest&logoColor=000)](#)
-[![PyIconeus](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml/badge.svg?branch=main)](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml)
+[![PyPI](https://img.shields.io/pypi/v/pyiconeus)](https://pypi.org/project/pyiconeus/)
+[![Python](https://img.shields.io/pypi/pyversions/pyiconeus)](https://pypi.org/project/pyiconeus/)
+[![Tests](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml/badge.svg?branch=dev)](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml)
+[![Lint](https://github.com/Iconeus/PyIconeus/actions/workflows/lint.yml/badge.svg?branch=dev)](https://github.com/Iconeus/PyIconeus/actions/workflows/lint.yml)
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)](#testing)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21807850.svg)](https://doi.org/10.5281/zenodo.21807850)
 
 **PyIconeus** is Iconeus' open-source Python library for reading Iconeus data
@@ -88,6 +91,16 @@ You can build the documentation using [`Sphinx`](https://www.sphinx-doc.org/en/m
 ```console
 make html
 ```
+
+## Testing
+
+Run the test suite with coverage locally:
+
+```console
+hatch test -c
+```
+
+The build requires at least 90% total coverage.
 
 ## Usage
 
