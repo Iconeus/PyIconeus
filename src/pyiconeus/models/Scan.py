@@ -193,88 +193,93 @@ class Scan:
         None
         """
         with h5py.File(filepath, "r") as f:
-            metaData: h5py.Dataset = f["scanMetaData"]
-            date_str: str = hdf5_string_reader(metaData["Date"])
-            self.probe = Probe()
-            date: datetime = datetime.strptime(
-                date_str if date_str else "1970-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"
-            )
-            self.acquisitionDate = date.replace(tzinfo=pytz.utc)
-            self.projectTag = hdf5_string_reader(metaData["Project_tag"])
-            self.scanTag = hdf5_string_reader(metaData["Scan_tag"])
-            self.subjectTag = hdf5_string_reader(metaData["Subject_tag"])
-            self.sessionTag = hdf5_string_reader(metaData["Session_tag"])
-            type: str = hdf5_string_reader(metaData["Type"])
-            if type == "source":
-                self.type = ScanType.Source
-            elif type in {"processed", "proc"}:
-                self.type = ScanType.Proc
-            else:
-                raise ValueError(f"Unsupported scan type: {type!r}")
-            self.username = hdf5_string_reader(metaData["User_name"])
-            self.projectDescription = hdf5_string_reader(metaData["Comment"])
-            acqMetaData: h5py.Dataset = f["acqMetaData"]
-            self.matchAcquisitionMode(acqMetaData)
-            time_original = np.asarray(acqMetaData["timeOriginal"][:]).reshape(-1)
-            integration_time = float(acqMetaData["voxDim"]["dt"][0][0])
-            dt = (
-                float(np.diff(np.sort(time_original))[0])
-                if time_original.size > 1
-                else integration_time
-            )
-            if dt == 0:
-                dt = integration_time
-            dy: float | None = float(acqMetaData["voxDim"]["dy"][0][0])
-            if not self.can_be_consolidated(f):
-                self._load_nonconsolidated_data(f)
-                self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
-                self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
-                timeOriginal = acqMetaData["timeOriginal"][:]
-                self.theoreticalTimeIndices = theoretical_time_indices(
-                    timeOriginal, dt, dt
-                ).tolist()
-                probeToLabs = acqMetaData["probeToLab"][:]
-                if probeToLabs.ndim < 3:
-                    probeToLabs = probeToLabs.reshape((1, 4, 4))
-                translations = np.ndarray(shape=(len(probeToLabs), 3))
-                rotations = np.ndarray(shape=(len(probeToLabs), 3))
-                for i in range(len(probeToLabs)):
-                    tform = probeToLabs[i]
-                    tr = np.copy(tform.T[3][0:3])
-                    tform.T[3][0:3] = 0
-                    eul = inverse_rotation_xyz(tform)
-                    rotations[i] = eul
-                    translations[i] = tr
-                self.probeToLabsTranslations = translations
-                self.probeToLabsRotations = rotations
-                self.sizeX = self.voxels.shape[0]
-                self.sizeY = self.voxels.shape[1]
-                self.sizeZ = self.voxels.shape[2]
-                self.nTime = self.voxels.shape[3]
-            else:
-                (data, time, timeIndices, probeTranslation, probeRotation, dy) = (
-                    consolidate_scan(f)
-                )
-                self.sizeX = data.shape[0]
-                self.sizeY = data.shape[1]
-                self.sizeZ = data.shape[2]
-                self.nTime = data.shape[3]
-                self.nPose = data.shape[4] if data.ndim > 4 else 1
-                if data.ndim < 6:
-                    data = data.reshape(
-                        (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1)
-                    )
-                self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
-                self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
-                self.probeToLabsTranslations = probeTranslation
-                self.probeToLabsRotations = probeRotation
-                self.measuredTimes = time.reshape(-1).tolist()
-                self.theoreticalTimeIndices = timeIndices.reshape(-1).tolist()
-                self.voxels = data
+            acqMetaData = self._load_hdf5_metadata(f)
+            dt, dy = self._load_hdf5_data(f, acqMetaData)
             self.integrationWindowDuration = float(acqMetaData["voxDim"]["dt"][0][0])
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"], dt, dy)
             self.fill_default(f)
+
+    def _load_hdf5_data(
+        self, f: h5py.File, acqMetaData: h5py.Dataset
+    ) -> tuple[float, float | None]:
+        """Load HDF5 voxels, timings, and probe transforms."""
+        time_original = np.asarray(acqMetaData["timeOriginal"][:]).reshape(-1)
+        integration_time = float(acqMetaData["voxDim"]["dt"][0][0])
+        dt = (
+            float(np.diff(np.sort(time_original))[0])
+            if time_original.size > 1
+            else integration_time
+        )
+        if dt == 0:
+            dt = integration_time
+        dy: float | None = float(acqMetaData["voxDim"]["dy"][0][0])
+        if not self.can_be_consolidated(f):
+            self._load_nonconsolidated_data(f)
+            self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
+            self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
+            timeOriginal = acqMetaData["timeOriginal"][:]
+            self.theoreticalTimeIndices = theoretical_time_indices(
+                timeOriginal, dt, dt
+            ).tolist()
+            probeToLabs = acqMetaData["probeToLab"][:]
+            if probeToLabs.ndim < 3:
+                probeToLabs = probeToLabs.reshape((1, 4, 4))
+            translations = np.ndarray(shape=(len(probeToLabs), 3))
+            rotations = np.ndarray(shape=(len(probeToLabs), 3))
+            for i in range(len(probeToLabs)):
+                tform = probeToLabs[i]
+                tr = np.copy(tform.T[3][0:3])
+                tform.T[3][0:3] = 0
+                eul = inverse_rotation_xyz(tform)
+                rotations[i] = eul
+                translations[i] = tr
+            self.probeToLabsTranslations = translations
+            self.probeToLabsRotations = rotations
+            self.sizeX = self.voxels.shape[0]
+            self.sizeY = self.voxels.shape[1]
+            self.sizeZ = self.voxels.shape[2]
+            self.nTime = self.voxels.shape[3]
+        else:
+            data, time, timeIndices, probeTranslation, probeRotation, dy = consolidate_scan(f)
+            self.sizeX, self.sizeY, self.sizeZ, self.nTime = data.shape[:4]
+            self.nPose = data.shape[4] if data.ndim > 4 else 1
+            if data.ndim < 6:
+                data = data.reshape(
+                    (self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose, 1)
+                )
+            self.probeToLabsTranslations = probeTranslation
+            self.probeToLabsRotations = probeRotation
+            self.measuredTimes = time.reshape(-1).tolist()
+            self.theoreticalTimeIndices = timeIndices.reshape(-1).tolist()
+            self.voxels = data
+        return dt, dy
+
+    def _load_hdf5_metadata(self, f: h5py.File) -> h5py.Dataset:
+        """Load scan metadata and return the acquisition metadata group."""
+        metaData: h5py.Dataset = f["scanMetaData"]
+        date_str: str = hdf5_string_reader(metaData["Date"])
+        self.probe = Probe()
+        date: datetime = datetime.strptime(
+            date_str if date_str else "1970-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"
+        )
+        self.acquisitionDate = date.replace(tzinfo=pytz.utc)
+        self.projectTag = hdf5_string_reader(metaData["Project_tag"])
+        self.scanTag = hdf5_string_reader(metaData["Scan_tag"])
+        self.subjectTag = hdf5_string_reader(metaData["Subject_tag"])
+        self.sessionTag = hdf5_string_reader(metaData["Session_tag"])
+        scan_type: str = hdf5_string_reader(metaData["Type"])
+        if scan_type == "source":
+            self.type = ScanType.Source
+        elif scan_type in {"processed", "proc"}:
+            self.type = ScanType.Proc
+        else:
+            raise ValueError(f"Unsupported scan type: {scan_type!r}")
+        self.username = hdf5_string_reader(metaData["User_name"])
+        self.projectDescription = hdf5_string_reader(metaData["Comment"])
+        acqMetaData: h5py.Dataset = f["acqMetaData"]
+        self.matchAcquisitionMode(acqMetaData)
+        return acqMetaData
 
     def matchAcquisitionMode(self, acqMetaData: h5py.Dataset) -> None:
         """
@@ -522,39 +527,8 @@ class Scan:
         None
         """
         with open(filepath, "rb") as f:
-            f.seek(32)
-            dO: int = _read_struct(f, "<Q")
-            f.seek(92)
-            self.sizeX = _read_struct(f, "<Q")
-            self.sizeY = _read_struct(f, "<Q")
-            self.sizeZ = _read_struct(f, "<Q")
-            self.nTime = _read_struct(f, "<Q")
-            self.nPose = _read_struct(f, "<Q")
-            if min(self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose) <= 0:
-                raise ValueError("scan dimensions must be positive")
-            self.dim6 = Dim6()
-            self.dim6.load_binary(f)
-            self.voxDim = VoxDim()
-            self.voxDim.load_binary(f)
-            timeArraySize: int = self.sizeY * self.nTime * self.nPose
-            if timeArraySize > os.fstat(f.fileno()).st_size // 8:
-                raise OSError("binary scan timing data is truncated")
-            for _ in range(timeArraySize):
-                self.measuredTimes.append(_read_struct(f, "<d"))
-            for _ in range(timeArraySize):
-                self.theoreticalTimeIndices.append(_read_struct(f, "<L"))
-                self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
-                self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
-            for i in range(self.nPose):
-                x = _read_struct(f, "<d")
-                y = _read_struct(f, "<d")
-                z = _read_struct(f, "<d")
-                self.probeToLabsTranslations[i] = [x, y, z]
-            for i in range(self.nPose):
-                x = _read_struct(f, "<d")
-                y = _read_struct(f, "<d")
-                z = _read_struct(f, "<d")
-                self.probeToLabsRotations[i] = [x, y, z]
+            dO, timeArraySize = self._load_binary_header(f)
+            self._load_binary_timing_and_transforms(f, timeArraySize)
             f.seek(4, 1)
             acquisition_mode = _read_struct(f, "<L")
             self.acquisitionMode = {
@@ -652,6 +626,42 @@ class Scan:
                 ),
                 order="F",
             )
+
+    def _load_binary_header(self, f: BufferedReader) -> tuple[int, int]:
+        """Load binary dimensions and return the data offset and timing size."""
+        f.seek(32)
+        dO: int = _read_struct(f, "<Q")
+        f.seek(92)
+        self.sizeX = _read_struct(f, "<Q")
+        self.sizeY = _read_struct(f, "<Q")
+        self.sizeZ = _read_struct(f, "<Q")
+        self.nTime = _read_struct(f, "<Q")
+        self.nPose = _read_struct(f, "<Q")
+        if min(self.sizeX, self.sizeY, self.sizeZ, self.nTime, self.nPose) <= 0:
+            raise ValueError("scan dimensions must be positive")
+        self.dim6 = Dim6()
+        self.dim6.load_binary(f)
+        self.voxDim = VoxDim()
+        self.voxDim.load_binary(f)
+        timeArraySize: int = self.sizeY * self.nTime * self.nPose
+        return dO, timeArraySize
+
+    def _load_binary_timing_and_transforms(
+        self, f: BufferedReader, timeArraySize: int
+    ) -> None:
+        """Load timing arrays and probe transforms from a binary scan."""
+        if timeArraySize > os.fstat(f.fileno()).st_size // 8:
+            raise OSError("binary scan timing data is truncated")
+        self.measuredTimes = [_read_struct(f, "<d") for _ in range(timeArraySize)]
+        self.theoreticalTimeIndices = [
+            _read_struct(f, "<L") for _ in range(timeArraySize)
+        ]
+        self.probeToLabsTranslations = np.ndarray(shape=(self.nPose, 3))
+        self.probeToLabsRotations = np.ndarray(shape=(self.nPose, 3))
+        for i in range(self.nPose):
+            self.probeToLabsTranslations[i] = [_read_struct(f, "<d") for _ in range(3)]
+        for i in range(self.nPose):
+            self.probeToLabsRotations[i] = [_read_struct(f, "<d") for _ in range(3)]
 
     def get_VoxelToProbe(self) -> np.ndarray:
         """
