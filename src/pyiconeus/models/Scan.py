@@ -293,16 +293,16 @@ class Scan:
         _acquisitionMode = hdf5_string_reader(acqMetaData["acquisitionMode"])
         match _acquisitionMode:
             case "2Dscan":
-                self.acquisitionMode = AcquisitionMode._2DScan
+                self.acquisitionMode = AcquisitionMode.fUS2D
                 self.probe.probeType = Probe.ProbeType.Linear
             case "3Dscan":
-                self.acquisitionMode = AcquisitionMode._3DScan
+                self.acquisitionMode = AcquisitionMode.Angio3D
                 if acqMetaData["imgDim"]["npose"][()] == 4:
                     self.probe.probeType = Probe.ProbeType.MultiArray
                 else:
                     self.probe.probeType = Probe.ProbeType.Linear
             case "4Dscan":
-                self.acquisitionMode = AcquisitionMode._4DScan
+                self.acquisitionMode = AcquisitionMode.fUS3D
                 if acqMetaData["imgDim"]["npose"][()] == 4:
                     self.probe.probeType = Probe.ProbeType.MultiArray
                 elif (
@@ -313,13 +313,13 @@ class Scan:
                 else:
                     self.probe.probeType = Probe.ProbeType.Linear
             case "4DscanCustom":
-                self.acquisitionMode = AcquisitionMode._4DScanCustom
+                self.acquisitionMode = AcquisitionMode.fUS3DCustom
                 self.probe.probeType = Probe.ProbeType.Linear
             case "4DscanRCA":
-                self.acquisitionMode = AcquisitionMode._4DscanRCA
+                self.acquisitionMode = AcquisitionMode.fUS3D
                 self.probe.probeType = Probe.ProbeType.RCA
             case "3DscanRCA":
-                self.acquisitionMode = AcquisitionMode._3DscanRCA
+                self.acquisitionMode = AcquisitionMode.Angio3D
                 self.probe.probeType = Probe.ProbeType.RCA
             case _:
                 raise ValueError(f"Unsupported acquisition mode: {_acquisitionMode!r}")
@@ -458,8 +458,7 @@ class Scan:
         """
         data_shape = hdf5_data["Data"].shape
         if (
-            self.acquisitionMode == AcquisitionMode._4DscanRCA
-            or self.acquisitionMode == AcquisitionMode._3DscanRCA
+            self.probe.probeType == Probe.ProbeType.RCA
         ):
             data = hdf5_data["Data"][:].T
             time = hdf5_data["acqMetaData"]["timeOriginal"][:]
@@ -467,7 +466,7 @@ class Scan:
             self.probe.probeType = Probe.ProbeType.RCA
             self.voxels = data
             return False
-        elif self.acquisitionMode == AcquisitionMode._4DScanCustom:
+        elif self.acquisitionMode == AcquisitionMode.fUS3DCustom:
             data = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 1, 2, 5, 4, 3))
             blockRepeat: int = int(
@@ -483,7 +482,7 @@ class Scan:
             len(data_shape) > 4
             and data_shape[1] == 4
             and data_shape[4] == 1
-            and self.acquisitionMode == AcquisitionMode._4DScan
+            and self.acquisitionMode == AcquisitionMode.fUS3D
         ):
             data = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 3, 2, 5, 1, 6, 4))
@@ -546,7 +545,15 @@ class Scan:
                 z = _read_struct(f, "<d")
                 self.probeToLabsRotations[i] = [x, y, z]
             f.seek(4, 1)
-            self.acquisitionMode = AcquisitionMode(_read_struct(f, "<L"))
+            acquisition_mode = _read_struct(f, "<L")
+            self.acquisitionMode = {
+                0: AcquisitionMode.fUS2D,
+                1: AcquisitionMode.Angio3D,
+                2: AcquisitionMode.fUS3D,
+                3: AcquisitionMode.fUS3DCustom,
+                4: AcquisitionMode.fUS3D,
+                5: AcquisitionMode.Angio3D,
+            }[acquisition_mode]
             f.seek(4, 1)
             self.probe = Probe()
             self.probe.load_binary(f)
@@ -698,7 +705,7 @@ class Scan:
             f"\ndim6: {self.dim6}\nvoxDim: {self.voxDim}\nmeasuredTimes: {len(self.measuredTimes)} ({self.sizeY} * {self.nTime} * {self.nPose}) (sizeY * nTime * nPose)\n"
             f"theoreticalTimeIndices: {len(self.theoreticalTimeIndices)} ({self.sizeY} * {self.nTime} * {self.nPose}) (sizeY * nTime * nPose)\n"
             f"probeToLabsTranslation: {self.probeToLabsTranslations}\nprobeToLabsRotations: {self.probeToLabsRotations}\n"
-            f"acquisitionMode: {self.acquisitionMode.name[1:]}\nprobe: {self.probe}\ndepth: {self.depth}\n"
+            f"acquisitionMode: {self.acquisitionMode.name}\nprobe: {self.probe}\ndepth: {self.depth}\n"
             f"ultrafastTransmitFrequency: {self.ultrafastTransmitFrequency}\npulseRepetitionFrequency: {self.pulseRepetitionFrequency}\n"
             f"ultrafastSamplingFrequency: {self.ultrafastSamplingFrequency}\nplaneWavesAngles: {len(self.planeWaveAngles)}\n"
         )
@@ -934,12 +941,10 @@ class Dim6:
 
 
 class AcquisitionMode(IntEnum):
-    _2DScan = 0
-    _3DScan = 1
-    _4DScan = 2
-    _4DScanCustom = 3
-    _4DscanRCA = 4
-    _3DscanRCA = 5
+    fUS2D = 0
+    Angio3D = 1
+    fUS3D = 2
+    fUS3DCustom = 3
 
 
 class Probe:

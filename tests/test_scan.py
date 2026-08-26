@@ -26,7 +26,7 @@ def test_scan():
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
     )
     assert isinstance(scan, Scan)
-    assert scan.acquisitionMode == AcquisitionMode._4DScan
+    assert scan.acquisitionMode == AcquisitionMode.fUS3D
 
 
 @mark.filterwarnings("ignore::RuntimeWarning")
@@ -34,12 +34,12 @@ def test_2D_Scan():
     scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
     print(scan)
     assert isinstance(scan, Scan)
-    assert scan.acquisitionMode == AcquisitionMode._2DScan
+    assert scan.acquisitionMode == AcquisitionMode.fUS2D
     assert scan.sizeY == 1
     scan = Scan("./tests/data" + "/2DScan.source.scan", False)
     print(scan)
     assert isinstance(scan, Scan)
-    assert scan.acquisitionMode == AcquisitionMode._2DScan
+    assert scan.acquisitionMode == AcquisitionMode.fUS2D
     assert scan.sizeY == 1
 
 
@@ -50,7 +50,7 @@ def test_3D_Scan():
         False,
     )
     assert isinstance(scan, Scan)
-    assert scan.acquisitionMode == AcquisitionMode._3DScan
+    assert scan.acquisitionMode == AcquisitionMode.Angio3D
 
 
 def test_scan_values():
@@ -72,7 +72,7 @@ def test_scan_values_ULM_2D():
     assert scan.dim6.count == 1
     assert len(scan.measuredTimes) == 9
     assert len(scan.theoreticalTimeIndices) == 9
-    assert scan.acquisitionMode == AcquisitionMode._2DScan
+    assert scan.acquisitionMode == AcquisitionMode.fUS2D
     assert scan.probe.name == "IcoPrime"
     assert scan.weight == 0.0
     assert scan.weightUnit == WeightUnitType.mg
@@ -228,11 +228,12 @@ def test_RCA_loading():
     )
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
+    assert scan.acquisitionMode == AcquisitionMode.fUS3D
     assert scan.probe.name == "IcoPrime"
     scan = Scan("./tests/data/" + "RCA_4Dscan_2_fus3D.source.scan", False)
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
-    assert scan.acquisitionMode == AcquisitionMode._4DscanRCA
+    assert scan.acquisitionMode == AcquisitionMode.fUS3D
 
 
 if __name__ == "__main__":
