@@ -5,7 +5,7 @@
 import pyiconeus
 import h5py
 from pytest import mark
-from pyiconeus.utils.utils import decryptData
+from pyiconeus.utils.utils import decrypt_data
 from pyiconeus import Raw
 from pyiconeus.models.Scan import Depth, VoxDim
 import numpy as np
@@ -21,12 +21,12 @@ def test_raw_val():
     metadata: pyiconeus.Raw.MetaData = pyiconeus.Raw.MetaData(
         "./tests/data" + "/2DScan_v2.hraw"
     )
-    metadata.transmitFrequency = float(decryptData(np.array([15775.125]), 1))
-    metadata.prf = float(decryptData(np.array([22110072]), 2))
-    metadata.speedOfSound = float(decryptData(np.array([4643172]), 3))
-    metadata.frameRate = float(decryptData(np.array([4020072]), 4))
-    metadata.receiveAperture = decryptData(np.array([5097, 643272]), 5)
-    metadata.flatAngles = decryptData(
+    metadata.transmitFrequency = float(decrypt_data(np.array([15775.125]), 1))
+    metadata.prf = float(decrypt_data(np.array([22110072]), 2))
+    metadata.speedOfSound = float(decrypt_data(np.array([4643172]), 3))
+    metadata.frameRate = float(decrypt_data(np.array([4020072]), 4))
+    metadata.receiveAperture = decrypt_data(np.array([5097, 643272]), 5)
+    metadata.flatAngles = decrypt_data(
         np.array(
             [
                 -70278,
@@ -44,12 +44,12 @@ def test_raw_val():
         ),
         7,
     )
-    metadata.blockDim = decryptData(np.array([1157832, 9117, 823167, 9117, 3618072]), 9)
-    metadata.compound = bool(decryptData(np.array([10122]), 10))
-    metadata.numberOfBlock = int(decryptData(np.array([99567]), 11))
+    metadata.blockDim = decrypt_data(np.array([1157832, 9117, 823167, 9117, 3618072]), 9)
+    metadata.compound = bool(decrypt_data(np.array([10122]), 10))
+    metadata.numberOfBlock = int(decrypt_data(np.array([99567]), 11))
     metadata.acquisitionMode = "2Dscan"
-    depthData = decryptData(np.array([6102, 60372]), 6)
-    voxDimData = decryptData(np.array([956.4, 3288, 864.4223999999999]), 8)
+    depthData = decrypt_data(np.array([6102, 60372]), 6)
+    voxDimData = decrypt_data(np.array([956.4, 3288, 864.4223999999999]), 8)
     metadata.depth = Depth()
     metadata.depth.depthNear = depthData[0]
     metadata.depth.depthFar = depthData[1]

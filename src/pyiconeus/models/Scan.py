@@ -11,14 +11,14 @@ import numpy as np
 from datetime import datetime
 from enum import IntEnum
 from ..utils.utils import (
-    translationMatrix,
-    scaleMatrix,
     read_string_binary,
     hdf5_string_reader,
     transform_points_forward,
     rotation_xyz,
     inverse_rotation_xyz,
     _read_struct,
+    scale_matrix,
+    translation_matrix,
 )
 from ..utils.consolidation import consolidate_scan, theoretical_time_indices
 
@@ -278,10 +278,10 @@ class Scan:
         self.username = hdf5_string_reader(metaData["User_name"])
         self.projectDescription = hdf5_string_reader(metaData["Comment"])
         acqMetaData: h5py.Dataset = f["acqMetaData"]
-        self.matchAcquisitionMode(acqMetaData)
+        self.match_acquisition_mode(acqMetaData)
         return acqMetaData
 
-    def matchAcquisitionMode(self, acqMetaData: h5py.Dataset) -> None:
+    def match_acquisition_mode(self, acqMetaData: h5py.Dataset) -> None:
         """
         HDF5 helper function to correctly set the scan's acquisition mode
 
@@ -411,11 +411,11 @@ class Scan:
         self.taskName = ""
         self.taskDescription = "none"
         self.stimulationToggleTimes = []
-        self.fillIcoScanVersion(
+        self.fill_ico_scan_version(
             hdf5_string_reader(f["scanMetaData"]["Neuroscan_version"])
         )
 
-    def fillIcoScanVersion(self, neuroscan: str) -> None:
+    def fill_ico_scan_version(self, neuroscan: str) -> None:
         """
         Fill the IcoScanVersion's class using the given string for HDF5 files
 
@@ -663,7 +663,7 @@ class Scan:
         for i in range(self.nPose):
             self.probeToLabsRotations[i] = [_read_struct(f, "<d") for _ in range(3)]
 
-    def get_VoxelToProbe(self) -> np.ndarray:
+    def get_voxel_to_probe(self) -> np.ndarray:
         """
         Compute the VoxelToProbe affine
 
@@ -678,19 +678,19 @@ class Scan:
         np.ndarray (4, 4)
             The computed affine matrix
         """
-        shift_voxel: np.ndarray = translationMatrix(-1, -1, -1)
-        center_probe: np.ndarray = translationMatrix(
+        shift_voxel: np.ndarray = translation_matrix(-1, -1, -1)
+        center_probe: np.ndarray = translation_matrix(
             (float)(-((self.sizeX - 1) / 2)), (float)(-((self.sizeY - 1) / 2)), 0
         )
-        scale_to_metric: np.ndarray = scaleMatrix(
+        scale_to_metric: np.ndarray = scale_matrix(
             self.voxDim.dx, self.voxDim.dy, -self.voxDim.dz
         )
-        move_probe_up: np.ndarray = translationMatrix(
+        move_probe_up: np.ndarray = translation_matrix(
             0, 0, 0.001 * -self.depth.depthNear
         )
         return move_probe_up @ scale_to_metric @ center_probe @ shift_voxel
 
-    def get_ProbeToLab(self) -> list[np.ndarray]:
+    def get_probe_to_lab(self) -> list[np.ndarray]:
         """
         Compute the ProbeToLabs matrices.
         One translation matrix per rotation: The translation represents the mean translation of the volume for a specific probe rotation

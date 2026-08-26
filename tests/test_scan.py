@@ -98,7 +98,7 @@ def test_velocity_bandwidth_filtering_string():
 
 def test_voxel_to_prob():
     scan: Scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
-    vTp = scan.get_VoxelToProbe()
+    vTp = scan.get_voxel_to_probe()
     print("VoxelToProbeCreation")
     print(vTp)
     assert vTp is not None
@@ -157,8 +157,8 @@ def test_compare_matrices():
 
     assert isinstance(scanv1, Scan)
     assert isinstance(scanv2, Scan)
-    ptl1 = scanv1.get_ProbeToLab()[0]
-    ptl2 = scanv2.get_ProbeToLab()[0]
+    ptl1 = scanv1.get_probe_to_lab()[0]
+    ptl2 = scanv2.get_probe_to_lab()[0]
     assert np.allclose(ptl1, ptl2)
 
 

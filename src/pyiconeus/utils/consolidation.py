@@ -11,7 +11,7 @@ import h5py
 import numpy.typing as npt
 from transforms3d.euler import euler2mat, mat2euler
 
-from .utils import rotation_xyz, translationMatrix
+from .utils import rotation_xyz, translation_matrix
 
 
 def theoretical_time_indices(
@@ -368,7 +368,7 @@ def consolidate_scan(
     probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
     probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     for rotation_index, rotation in enumerate(rotations):
-        tformTranslation = translationMatrix(0, np.mean(translations), 0)
+        tformTranslation = translation_matrix(0, np.mean(translations), 0)
         tformRotation = rotation_xyz((0.0, 0.0, np.radians(rotation)))
         translation_tform = (
             translation_to_center_tform @ tformRotation @ tformTranslation

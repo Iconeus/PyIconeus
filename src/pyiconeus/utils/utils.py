@@ -104,7 +104,7 @@ def read_string_binary(f: BufferedReader, format: str, bytes_size: int) -> str:
     return _read_exact(f, string_size).decode("utf-8").strip("\x00 ")
 
 
-def translationMatrix(dx: float, dy: float, dz: float) -> np.ndarray:
+def translation_matrix(dx: float, dy: float, dz: float) -> np.ndarray:
     """
     Create a 4x4 tform with given translation
 
@@ -127,7 +127,7 @@ def translationMatrix(dx: float, dy: float, dz: float) -> np.ndarray:
     return np.array([[1, 0, 0, dx], [0, 1, 0, dy], [0, 0, 1, dz], [0, 0, 0, 1]])
 
 
-def scaleMatrix(sx: float, sy: float, sz: float) -> np.ndarray:
+def scale_matrix(sx: float, sy: float, sz: float) -> np.ndarray:
     """
     Create a 4x4 tform with given scale components
 
@@ -150,7 +150,7 @@ def scaleMatrix(sx: float, sy: float, sz: float) -> np.ndarray:
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
 
 
-def decryptData(value: np.ndarray, n: int) -> np.ndarray:
+def decrypt_data(value: np.ndarray, n: int) -> np.ndarray:
     """
     Util function to decrypt raw data that have been encrypted in first versions of '.raw' files
 
