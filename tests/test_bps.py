@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
+
 import pyiconeus
 from pyiconeus.io.base import read_bps
 
@@ -58,4 +59,3 @@ def test_bps_v2_data():
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
     )
     assert np.allclose(bps.data, data_true)
-

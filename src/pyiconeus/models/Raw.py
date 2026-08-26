@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
-import h5py
-import warnings
 import os
+import warnings
 from numbers import Integral
+
+import h5py
+import numpy as np
 
 from ..utils.utils import decrypt_data, hdf5_string_reader
 from .Scan import Depth, VoxDim

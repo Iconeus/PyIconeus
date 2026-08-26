@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import h5py
 import os
+
+import h5py
 import numpy as np
 
 from ..utils.utils import _read_struct
@@ -20,7 +21,9 @@ class Bps:
         The affine matrix
     """
 
-    def __init__(self, filepath: str | os.PathLike[str], is_binary: bool = False) -> None:
+    def __init__(
+        self, filepath: str | os.PathLike[str], is_binary: bool = False
+    ) -> None:
         if is_binary:
             with open(filepath, "rb") as f:
                 self.data: np.ndarray = np.ndarray(shape=(4, 4), dtype=float)

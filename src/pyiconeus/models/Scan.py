@@ -2,27 +2,28 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from io import BufferedReader
 import os
 import re
-import h5py
-import pytz
-import numpy as np
 from datetime import datetime
 from enum import IntEnum
-from ..utils.utils import (
-    read_string_binary,
-    hdf5_string_reader,
-    transform_points_forward,
-    rotation_xyz,
-    inverse_rotation_xyz,
-    _read_struct,
-    scale_matrix,
-    translation_matrix,
-)
-from ..utils.consolidation import consolidate_scan, theoretical_time_indices
+from io import BufferedReader
+
+import h5py
+import numpy as np
+import pytz
 
 from ..models.Bps import Bps
+from ..utils.consolidation import consolidate_scan, theoretical_time_indices
+from ..utils.utils import (
+    _read_struct,
+    hdf5_string_reader,
+    inverse_rotation_xyz,
+    read_string_binary,
+    rotation_xyz,
+    scale_matrix,
+    transform_points_forward,
+    translation_matrix,
+)
 
 
 class Scan:
@@ -241,7 +242,9 @@ class Scan:
             self.sizeZ = self.voxels.shape[2]
             self.nTime = self.voxels.shape[3]
         else:
-            data, time, timeIndices, probeTranslation, probeRotation, dy = consolidate_scan(f)
+            data, time, timeIndices, probeTranslation, probeRotation, dy = (
+                consolidate_scan(f)
+            )
             self.sizeX, self.sizeY, self.sizeZ, self.nTime = data.shape[:4]
             self.nPose = data.shape[4] if data.ndim > 4 else 1
             if data.ndim < 6:

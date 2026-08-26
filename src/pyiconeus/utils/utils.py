@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from io import BufferedReader
 import struct
+from io import BufferedReader
+
+import h5py
 import numpy as np
 import numpy.typing as npt
-import h5py
 
 _MAX_BINARY_STRING_SIZE = 16 * 1024 * 1024
 

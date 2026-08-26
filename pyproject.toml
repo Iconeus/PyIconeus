@@ -32,8 +32,11 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
- "pytest>=8",
- "requests",
+  "pytest>=8",
+  "requests",
+]
+dev = [
+  "ruff>=0.15",
 ]
 example = [
   "matplotlib",
@@ -81,6 +84,14 @@ exclude_lines = [
 
 [tool.mypy]
 ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+extend-exclude = ["examples"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
 
 
 [tool.hatch.metadata]

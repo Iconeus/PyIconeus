@@ -29,10 +29,10 @@ release = __version__
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",       # Pull docstrings from the pyiconeus source code
-    "sphinx.ext.autosummary",   # Auto-generate one reference page per module/class
-    "sphinx.ext.viewcode",      # Add links to the highlighted source code
-    "sphinx.ext.intersphinx",   # Link out to numpy/h5py/python documentation
+    "sphinx.ext.autodoc",  # Pull docstrings from the pyiconeus source code
+    "sphinx.ext.autosummary",  # Auto-generate one reference page per module/class
+    "sphinx.ext.viewcode",  # Add links to the highlighted source code
+    "sphinx.ext.intersphinx",  # Link out to numpy/h5py/python documentation
     "sphinx_book_theme",
 ]
 

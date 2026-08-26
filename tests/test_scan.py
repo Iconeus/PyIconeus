@@ -4,6 +4,7 @@
 
 import numpy as np
 from pytest import mark
+
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
 from pyiconeus.models.Scan import (
     AcquisitionMode,

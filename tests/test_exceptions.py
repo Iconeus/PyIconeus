@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pytest
 import os
+
+import pytest
+
 from pyiconeus import open_path
 from pyiconeus.io.base import check_fourCC
 

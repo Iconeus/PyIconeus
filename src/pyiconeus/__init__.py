@@ -3,12 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from pyiconeus.__about__ import __version__
-from pyiconeus.models.Scan import Scan
+from pyiconeus.io.base import open_path
 from pyiconeus.models.Bps import Bps
 from pyiconeus.models.Raw import Raw
 from pyiconeus.models.Roi import Roi
-
-from pyiconeus.io.base import open_path
+from pyiconeus.models.Scan import Scan
 
 __all__ = [
     "Scan",

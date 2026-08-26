@@ -4,13 +4,14 @@
 
 import h5py
 import numpy as np
+
+from pyiconeus.utils.consolidation import theoretical_time_indices
 from pyiconeus.utils.utils import (
     hdf5_printer,
     hdf5_string_reader,
     inverse_rotation_xyz,
     rotation_xyz,
 )
-from pyiconeus.utils.consolidation import theoretical_time_indices
 
 
 def test_hdf5_printer():

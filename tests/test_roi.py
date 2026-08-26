@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
-from pyiconeus.io.base import read_bri
+
 import pyiconeus
+from pyiconeus.io.base import read_bri
 
 
 def test_load_hdf5():

@@ -2,9 +2,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os
+
 import h5py
 import numpy as np
-import os
+
 from ..utils.utils import _read_struct, hdf5_string_reader, read_string_binary
 
 _MAX_ROI_COUNT = 100_000

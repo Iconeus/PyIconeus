@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pyiconeus
 import h5py
+import numpy as np
 from pytest import mark
-from pyiconeus.utils.utils import decrypt_data
+
+import pyiconeus
 from pyiconeus import Raw
 from pyiconeus.models.Scan import Depth, VoxDim
-import numpy as np
+from pyiconeus.utils.utils import decrypt_data
 
 
 def test_read_raw():
@@ -44,7 +45,9 @@ def test_raw_val():
         ),
         7,
     )
-    metadata.blockDim = decrypt_data(np.array([1157832, 9117, 823167, 9117, 3618072]), 9)
+    metadata.blockDim = decrypt_data(
+        np.array([1157832, 9117, 823167, 9117, 3618072]), 9
+    )
     metadata.compound = bool(decrypt_data(np.array([10122]), 10))
     metadata.numberOfBlock = int(decrypt_data(np.array([99567]), 11))
     metadata.acquisitionMode = "2Dscan"

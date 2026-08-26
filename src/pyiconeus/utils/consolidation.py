@@ -6,8 +6,8 @@
 
 import warnings
 
-import numpy as np
 import h5py
+import numpy as np
 import numpy.typing as npt
 from transforms3d.euler import euler2mat, mat2euler
 
