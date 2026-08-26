@@ -111,7 +111,7 @@ class Scan:
     """
 
     def __init__(self, filepath: str | os.PathLike[str], is_binary: bool) -> None:
-        """Scan class constructor. Reads the input file depending of the type set in 'is_binary'.
+        """Scan class constructor. Reads the input file depending on the type set in 'is_binary'.
         For scans v1 (not binary), the scan is filled with a lot of default values, matching the v2 format.
 
         Parameters
@@ -887,7 +887,7 @@ class Dim6:
 
         def load_binary(self, f: BufferedReader) -> object:
             """
-            VelocityBandwithFiltering's binary reader. Creates the correct Dim6 element with the given binary stream
+            VelocityBandwidthFiltering's binary reader. Creates the correct Dim6 element with the given binary stream
 
             Parameters
             ----------
@@ -991,7 +991,7 @@ class Probe:
 
     def fill_default(self) -> None:
         """
-        Fill the Probe class its default values
+        Fill the Probe class with its default values
 
         Parameters
         ----------

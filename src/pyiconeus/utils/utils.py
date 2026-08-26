@@ -30,7 +30,7 @@ def _read_struct(stream: BufferedReader, format: str):
 
 def hdf5_string_reader(hdf5_dataset: h5py.Dataset) -> str:
     """
-    Util function used to read an HDF5 string element depending of the internal type
+    Util function used to read an HDF5 string element depending on the internal type
 
     Parameters
     ----------

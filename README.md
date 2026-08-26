@@ -87,7 +87,7 @@ uv pip install -e ".[doc]"
 
 ## Documentation
 
-You can build the documentation using [`Sphinx`](https://www.sphinx-doc.org/en/master/). in the [`docs`](./docs) folder.
+You can build the documentation using [`Sphinx`](https://www.sphinx-doc.org/en/master/) from the [`docs`](./docs) folder.
 
 ```console
 make html
