@@ -61,8 +61,9 @@ compound : bool
 numberOfBlock : int
     Number of blocks
 
-isEncrypted : bool
-    True if the data is encrypted, False otherwise
+isLegacyFormat : bool
+    True if the file uses the legacy raw data block layout from early
+    ``.raw`` acquisitions, False otherwise
 
 Block selection
 ---------------

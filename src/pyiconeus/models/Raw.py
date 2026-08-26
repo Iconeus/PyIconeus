@@ -70,8 +70,9 @@ class Raw:
         **numberOfBlock**: int
             Number of blocks
 
-        **isEncrypted**: bool
-            Is the data encrypted or not
+        **isLegacyFormat**: bool
+            True if the file uses the legacy raw data block layout from
+            early '.raw' acquisitions, False otherwise
 
         **acquisitionMode**: *str*
             Type of acquisition
@@ -101,7 +102,9 @@ class Raw:
                 if vox_dim.size < 3:
                     raise ValueError("RAW voxDim must contain three dimensions")
                 self.voxDim = VoxDim(vox_dim[0], vox_dim[1], vox_dim[2])
-                self.isEncrypted: bool = bool(_first_value(decrypt_data(h5["F12"], 12)))
+                self.isLegacyFormat: bool = bool(
+                    _first_value(decrypt_data(h5["F12"], 12))
+                )
 
     def __init__(
         self,
@@ -146,7 +149,7 @@ class Raw:
         )
         block_size = 2 * sizeX * sizeY * sizeZ * nCompound * nFramesPerBlock * 4
         with open(filepath, "rb") as f:
-            if self.metadata.isEncrypted:
+            if self.metadata.isLegacyFormat:
                 f.seek(117)
             f.seek(nBlockToSkip * block_size, 1)
             expected_bytes = n_elements * np.dtype("<f4").itemsize
