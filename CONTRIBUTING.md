@@ -31,7 +31,10 @@ mypy --install-types --non-interactive src/pyiconeus tests
 ```
 
 The test suite must maintain at least 90% total coverage. Test data is expected
-to be available under `tests/data/`.
+to be available under `tests/data/`. It is hosted on Zenodo and can be fetched
+with `python download_script.py`.
+
+[![Test data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21807850.svg)](https://doi.org/10.5281/zenodo.21807850)
 
 ## Pull Requests
 
