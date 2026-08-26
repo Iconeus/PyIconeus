@@ -5,7 +5,13 @@
 import numpy as np
 from pytest import mark
 from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
-from pyiconeus.models.Scan import Scan, AcquisitionMode, WeightUnitType, Probe
+from pyiconeus.models.Scan import (
+    AcquisitionMode,
+    Dim6,
+    Probe,
+    Scan,
+    WeightUnitType,
+)
 
 
 def test_check_fourCC():
@@ -72,6 +78,22 @@ def test_scan_values_ULM_2D():
     assert scan.weightUnit == WeightUnitType.mg
     assert scan.type.name == "Source"
     print(scan.voxels)
+
+
+def test_dim6_enum_values():
+    assert Dim6.Dim6Intent.ClutterFiltering == 0
+    assert Dim6.Dim6Intent.EnhancedDoppler == 1
+    assert Dim6.Dim6Intent.VelocityBandFiltering == 2
+    assert Dim6.ClutterFiltering.clutterFilterType.StaticSVD == 0
+    assert Dim6.ClutterFiltering.clutterFilterType.DynamicSVD == 1
+
+
+def test_velocity_bandwidth_filtering_string():
+    filtering = Dim6.VelocityBandwidthFiltering()
+    filtering.velocityMin = -1.5
+    filtering.velocityMax = 2.5
+
+    assert str(filtering) == "\t\tVelocity Min: -1.5\n\t\tVelocity Max: 2.5\n"
 
 
 def test_voxel_to_prob():

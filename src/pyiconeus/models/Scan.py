@@ -796,15 +796,15 @@ class IcoScanVersion:
 
 class Dim6:
     class Dim6Intent(IntEnum):
-        ClutterFiltering = (0,)
-        EnhancedDoppler = (1,)
-        VelocityBandFiltering = (2,)
+        ClutterFiltering = 0
+        EnhancedDoppler = 1
+        VelocityBandFiltering = 2
         BrainMaskedDoppler = 3
 
     class ClutterFiltering:
         class clutterFilterType(IntEnum):
-            StaticSVD = (0,)
-            DynamicSVD = (1,)
+            StaticSVD = 0
+            DynamicSVD = 1
             Butterworth = 2
 
         def __init__(self) -> None:
@@ -875,7 +875,7 @@ class Dim6:
             return self
 
         def __str__(self) -> str:
-            return f"\t\tVelocity Min: ${self.velocityMin}\n\t\tVelocity Max: ${self.velocityMax}\n"
+            return f"\t\tVelocity Min: {self.velocityMin}\n\t\tVelocity Max: {self.velocityMax}\n"
 
         __repr__ = __str__
 
