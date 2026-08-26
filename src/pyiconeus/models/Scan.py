@@ -226,8 +226,8 @@ class Scan:
             probeToLabs = acqMetaData["probeToLab"][:]
             if probeToLabs.ndim < 3:
                 probeToLabs = probeToLabs.reshape((1, 4, 4))
-            translations = np.ndarray(shape=(len(probeToLabs), 3))
-            rotations = np.ndarray(shape=(len(probeToLabs), 3))
+            translations: np.ndarray = np.ndarray(shape=(len(probeToLabs), 3))
+            rotations: np.ndarray = np.ndarray(shape=(len(probeToLabs), 3))
             for i in range(len(probeToLabs)):
                 tform = probeToLabs[i]
                 tr = np.copy(tform.T[3][0:3])

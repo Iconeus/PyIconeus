@@ -5,9 +5,13 @@ name: PyIconeus
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master", "dev" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   prepare-data:

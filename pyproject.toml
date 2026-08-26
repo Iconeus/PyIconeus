@@ -37,6 +37,7 @@ test = [
 ]
 dev = [
   "ruff>=0.15",
+  "mypy>=1.0.0",
 ]
 example = [
   "matplotlib",

@@ -92,7 +92,8 @@ def _fix_multiarray_probe(
     )
 
     # Create one probe-to-lab transform for every physical element of every pose.
-    new_probe2lab = np.zeros((data.shape[4], 4, 4))
+    data_shape: tuple[int, ...] = data.shape
+    new_probe2lab: np.ndarray = np.zeros((data_shape[4], 4, 4))
     translation_affine = np.eye(4)
     for index, probe_slice_translation in enumerate(probe_slice_translations):
         translation_affine[1, 3] = probe_slice_translation
@@ -101,7 +102,7 @@ def _fix_multiarray_probe(
         )
 
     voxels2probe[1, 1] = 4e-4
-    voxels2probe[1, 3] = -np.floor(data.shape[1] / 2) * voxels2probe[1, 1]
+    voxels2probe[1, 3] = -np.floor(data_shape[1] / 2) * voxels2probe[1, 1]
 
     rotations = new_probe2lab.copy()
     rotations[:, :3, 3] = 0
@@ -242,7 +243,7 @@ def _deconvolve_probe_path(
         else:
             rotation_indices.append(matching_rotation)
     rotations = np.degrees(np.asarray(rotation_angles))
-    translations = np.zeros((len(tforms),))
+    translations: np.ndarray = np.zeros((len(tforms),))
     for tform_index, rotation_index in enumerate(rotation_indices):
         rotation_tform = np.eye(4)
         rotation_tform[:3, :3] = euler2mat(0, 0, rotation_angles[rotation_index])
@@ -365,7 +366,7 @@ def consolidate_scan(
         raise RuntimeError("At least two probe poses are required for consolidation.")
     voxDimDy = float(np.mean(translation_steps))
 
-    probe2labTranslation = np.ndarray(shape=(len(rotations), 3))
+    probe2labTranslation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     probe2labRotation: npt.NDArray = np.ndarray(shape=(len(rotations), 3))
     for rotation_index, rotation in enumerate(rotations):
         tformTranslation = translation_matrix(0, np.mean(translations), 0)
