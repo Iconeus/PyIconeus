@@ -76,6 +76,7 @@ pyiconeus = ["src/pyiconeus", "*/pyiconeus/src/pyiconeus"]
 tests = ["tests", "*/pyiconeus/tests"]
 
 [tool.coverage.report]
+fail_under = 90
 exclude_lines = [
   "no cov",
   "if __name__ == .__main__.:",
@@ -101,4 +102,4 @@ allow-direct-references = true
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"
 run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
 cov-combine = "coverage combine"
-cov-report = "coverage report"
+cov-report = "coverage report --fail-under=90"

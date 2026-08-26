@@ -62,5 +62,5 @@ jobs:
     - name: Install Hatch
       run: pipx install hatch
       
-    - name: Run test
-      run: hatch test --cover
+    - name: Run test with coverage
+      run: hatch test -c
