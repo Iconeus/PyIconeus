@@ -1,12 +1,12 @@
 # PyIconeus
 
-[![NumPy](https://img.shields.io/badge/NumPy-4DABCF?logo=numpy&logoColor=fff)]()
-[![PyPI](https://img.shields.io/pypi/v/pyiconeus)](https://pypi.org/project/pyiconeus/)
-[![Python](https://img.shields.io/pypi/pyversions/pyiconeus)](https://pypi.org/project/pyiconeus/)
-[![Tests](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml/badge.svg?branch=dev)](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml)
-[![Lint](https://github.com/Iconeus/PyIconeus/actions/workflows/lint.yml/badge.svg?branch=dev)](https://github.com/Iconeus/PyIconeus/actions/workflows/lint.yml)
-[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)](#testing)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21807850.svg)](https://doi.org/10.5281/zenodo.21807850)
+[![NumPy](https://img.shields.io/badge/NumPy-4DABCF?logo=numpy&logoColor=fff&style=flat-square)]()
+[![PyPI](https://img.shields.io/pypi/v/pyiconeus?style=flat-square)](https://pypi.org/project/pyiconeus/)
+[![Python](https://img.shields.io/pypi/pyversions/pyiconeus?style=flat-square)](https://pypi.org/project/pyiconeus/)
+[![Tests](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml/badge.svg?branch=dev&style=flat-square)](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml)
+[![Lint](https://github.com/Iconeus/PyIconeus/actions/workflows/lint.yml/badge.svg?branch=dev&style=flat-square)](https://github.com/Iconeus/PyIconeus/actions/workflows/lint.yml)
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen?style=flat-square)](#testing)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21807850.svg?style=flat-square)](https://doi.org/10.5281/zenodo.21807850)
 
 **PyIconeus** is Iconeus' open-source Python library for reading Iconeus data
 formats. It exposes the `Scan`, `Bps`, `Roi` and `Raw` models through a single
@@ -137,7 +137,7 @@ and transforms3d.
 To install all optional dependencies, run the following:
 
 ```console
-uv pip install -e ".[test,doc,example]"
+uv pip install -e ".[test,doc,example,dev]"
 ```
 
 ## License
