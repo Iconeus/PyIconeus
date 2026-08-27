@@ -1,12 +1,13 @@
 # PyIconeus
 
+
 [![NumPy](https://img.shields.io/badge/NumPy-4DABCF?logo=numpy&logoColor=fff&style=flat-square)]()
 [![PyPI](https://img.shields.io/pypi/v/pyiconeus?style=flat-square)](https://pypi.org/project/pyiconeus/)
 [![Python](https://img.shields.io/pypi/pyversions/pyiconeus?style=flat-square)](https://pypi.org/project/pyiconeus/)
 [![Tests](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml/badge.svg?branch=dev&style=flat-square)](https://github.com/Iconeus/PyIconeus/actions/workflows/python-package.yml)
 [![Lint](https://github.com/Iconeus/PyIconeus/actions/workflows/lint.yml/badge.svg?branch=dev&style=flat-square)](https://github.com/Iconeus/PyIconeus/actions/workflows/lint.yml)
 [![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen?style=flat-square)](#testing)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21807850.svg?style=flat-square)](https://doi.org/10.5281/zenodo.21807850)
+
 
 **PyIconeus** is Iconeus' open-source Python library for reading Iconeus data
 formats. It exposes the `Scan`, `Bps`, `Roi` and `Raw` models through a single
@@ -26,6 +27,7 @@ Supported formats:
 - [Installation](#installation)
 - [Usage](#usage)
 - [Contributing](#contributing)
+- [Citation](#citation)
 - [License](#license)
 
 ## Installation
@@ -138,6 +140,21 @@ To install all optional dependencies, run the following:
 
 ```console
 uv pip install -e ".[test,doc,example,dev]"
+```
+
+## Citation
+
+If you use PyIconeus in your research, please cite it. Citation metadata is
+available in [`CITATION.cff`](./CITATION.cff), and GitHub's "Cite this
+repository" button generates the entry for you in several formats.
+
+```bibtex
+@software{iconeus_pyiconeus,
+  author  = {{Iconeus}},
+  title   = {PyIconeus},
+  url     = {https://github.com/Iconeus/PyIconeus},
+  license = {BSD-3-Clause}
+}
 ```
 
 ## License
