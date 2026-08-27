@@ -64,16 +64,10 @@ uv pip install -e .
 
 3. Install other dependencies
 
-Run the tests (the repository test data must be present):
+Dependencies to run the tests:
 
 ```console
 uv pip install -e ".[test]"
-```
-
-Check the installation:
-
-```console
-pytest
 ```
 
 To run the examples:
@@ -98,6 +92,14 @@ make html
 ## Testing
 
 Run the test suite with coverage locally:
+
+```console
+coverage run -m pytest tests
+coverage combine
+coverage report --fail-under=90
+```
+
+Alternatively, you can use this command if you have hatch installed:
 
 ```console
 hatch test -c

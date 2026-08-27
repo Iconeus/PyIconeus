@@ -43,6 +43,7 @@ dependencies = [
 test = [
   "pytest>=8",
   "requests",
+  "coverage",
 ]
 dev = [
   "ruff>=0.15",
