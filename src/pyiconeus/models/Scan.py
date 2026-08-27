@@ -61,9 +61,9 @@ class Scan:
     ultrafastTransmitFrequency : float
         Ultrafast transmit frequency in MHz.
     pulseRepetitionFrequency : float
-        Pulse repetition frequency in kHz.
+        Pulse repetition frequency in Hz.
     ultrafastSamplingFrequency : float
-        Sampling frequency of the raw channel data.
+        Sampling frequency of the raw channel data in MHz.
     planeWaveAngles : list[float]
         Plane wave angles used in the acquisition (degrees).
     transmitVoltage : float

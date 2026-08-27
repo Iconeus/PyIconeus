@@ -92,7 +92,7 @@ ultrafastTransmitFrequency : float
     Frequency of the transmit, in MHz
 
 pulseRepetitionFrequency : float
-    Frequency of pulse repetition, in kHz
+    Frequency of pulse repetition, in Hz
 
 ultrafastSamplingFrequency : float
     Frequency of the ultra fast sampling, in MHz
