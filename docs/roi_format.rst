@@ -30,7 +30,7 @@ color : tuple[float, float, float]
     Normalized (R, G, B) vector with three components in the range 0..1.
 
 vertices : np.ndarray
-	(N, 3) array: each row containing the (x, y, z) coordinates of the vertex
+    (N, 3) array: each row containing the (x, y, z) coordinates of the vertex
 
 faces : np.ndarray
     (N, 3) array: three zero-based indices per row, each referring to
