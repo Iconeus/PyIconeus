@@ -14,9 +14,6 @@ from ..utils.utils import (
     read_string_binary,
 )
 
-_MAX_ROI_COUNT = 100_000
-_MAX_MESH_ELEMENTS = 10_000_000
-
 
 class Roi:
     """
@@ -47,12 +44,8 @@ class Roi:
             with open(filepath, "rb") as f:
                 f.seek(12)
                 roi_count: int = _read_struct(f, "<L")
-                if roi_count > _MAX_ROI_COUNT:
-                    raise ValueError(f"ROI count is too large: {roi_count}")
                 for _ in range(roi_count):
                     vertices_count: int = _read_struct(f, "<L")
-                    if vertices_count > _MAX_MESH_ELEMENTS:
-                        raise ValueError(f"vertex count is too large: {vertices_count}")
                     vertices: np.ndarray = np.empty(shape=(vertices_count, 3))
                     for i in range(vertices_count):
                         vertices[i][0] = _read_struct(f, "<d")
@@ -60,8 +53,6 @@ class Roi:
                         vertices[i][2] = _read_struct(f, "<d")
 
                     indices_count: int = _read_struct(f, "<L")
-                    if indices_count > _MAX_MESH_ELEMENTS:
-                        raise ValueError(f"face count is too large: {indices_count}")
                     triangles: np.ndarray = np.empty(
                         shape=(indices_count, 3), dtype=np.int64
                     )
@@ -81,8 +72,6 @@ class Roi:
         else:
             with h5py.File(filepath, "r") as f:
                 roi_group = f["ROI"]
-                if len(roi_group) > _MAX_ROI_COUNT:
-                    raise ValueError(f"ROI count is too large: {len(roi_group)}")
                 for roiElementName in roi_group:
                     roiElement: h5py.Dataset = f["ROI"][roiElementName]
                     name: str = hdf5_string_reader(roiElement["label"])
@@ -94,12 +83,8 @@ class Roi:
                     faces_dataset = roiElement["faces"]
                     if vertices_dataset.ndim != 2 or vertices_dataset.shape[1] != 3:
                         raise ValueError("ROI vertices must have shape (N, 3)")
-                    if vertices_dataset.shape[0] > _MAX_MESH_ELEMENTS:
-                        raise ValueError("vertex count is too large")
                     if faces_dataset.ndim != 2 or faces_dataset.shape[1] != 3:
                         raise ValueError("ROI faces must have shape (N, 3)")
-                    if faces_dataset.shape[0] > _MAX_MESH_ELEMENTS:
-                        raise ValueError("face count is too large")
                     vertices = np.asarray(vertices_dataset[:])
                     faces: np.ndarray = np.asarray(faces_dataset[:])
                     faces = faces.astype(np.int64, copy=False)
