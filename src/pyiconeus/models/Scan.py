@@ -361,39 +361,10 @@ class Scan:
         clutDefault.clutterFilterCutoffLow = 0
         clutDefault.clutterFilterWindowDuration = self.integrationWindowDuration
         self.dim6.dim6element.add((Dim6.Dim6Intent.ClutterFiltering, clutDefault))
-        self.depth = Depth()
         voxel2Probe = acqMetaData["voxelsToProbe"][:]
+        self.depth = Depth()
         self.depth.fill_default(voxel2Probe, self.sizeZ)
-        dzIcoBright = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
-        dzIcoPrime = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
-        dzIcoRange = np.trunc(1e8 * 1540 * 1e-6 / 8.9290)
-        dzIcoDeep = np.trunc(1e8 * 1540 * 1e-6 / 6.25)
-        myTolerance: float = 2
-        convertedDz = np.trunc(self.voxDim.dz * 1e8)
-        if self.probe.probeType == Probe.ProbeType.MultiArray:
-            self.probe.name = "IcoPrime 4D MultiArray"
-        elif self.probe.probeType == Probe.ProbeType.RCA:
-            if abs(convertedDz - dzIcoPrime) < myTolerance:
-                self.probe.name = "IcoPrime 4D RCA"
-            else:
-                self.probe.name = "IcoBright 4D RCA"
-        else:
-            if abs(convertedDz - dzIcoRange) < myTolerance:
-                self.probe.name = "IcoRange"
-            elif abs(convertedDz - dzIcoDeep) < myTolerance:
-                self.probe.name = "IcoDeep"
-            elif abs(convertedDz - dzIcoBright) < myTolerance:
-                self.probe.name = "IcoBright"
-            elif abs(convertedDz - dzIcoPrime) < myTolerance:
-                if self.sizeX == 128:
-                    self.probe.name = "IcoPrime"
-                elif self.sizeX == 192:
-                    self.probe.name = "IcoPrimeXL"
-                else:
-                    self.probe.name = "IcoPrimeMini"
-            else:
-                self.probe.name = "unknown"
-        self.probe.fill_default()
+        self.probe = Probe.from_scan_geometry(self.probe.probeType, self.voxDim.dz, self.sizeX)
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
         self.planeWaveAngles = np.arange(-10, 12, 2, dtype=float).tolist()
@@ -978,6 +949,12 @@ class AcquisitionMode(IntEnum):
 
 
 class Probe:
+    _DZ_ICO_BRIGHT = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
+    _DZ_ICO_PRIME = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
+    _DZ_ICO_RANGE = np.trunc(1e8 * 1540 * 1e-6 / 8.9290)
+    _DZ_ICO_DEEP = np.trunc(1e8 * 1540 * 1e-6 / 6.25)
+    _DZ_TOLERANCE = 2
+
     class ProbeType(IntEnum):
         Linear = 0
         MultiArray = 1
@@ -994,6 +971,43 @@ class Probe:
         self.probeRadiusOfCurvature: float | None
         self.probeNumberOfElements: int | None
         self.probeModel: str | None
+
+    @classmethod
+    def from_scan_geometry(
+        cls, probe_type: "Probe.ProbeType", dz: float, sizeX: int
+    ) -> "Probe":
+        """Build a Probe with name and hardware defaults inferred from acquisition geometry."""
+        probe = cls()
+        probe.probeType = probe_type
+        probe.name = probe._infer_name(dz, sizeX)
+        probe.fill_default()
+        return probe
+
+    def _infer_name(self, dz: float, sizeX: int):
+        convertedDz = np.trunc(dz * 1e8)
+        if self.probeType == Probe.ProbeType.MultiArray:
+            return "IcoPrime 4D MultiArray"
+        elif self.probeType == Probe.ProbeType.RCA:
+            if abs(convertedDz - self._DZ_ICO_PRIME) < self._DZ_TOLERANCE:
+                return "IcoPrime 4D RCA"
+            else:
+                return "IcoBright 4D RCA"
+        else:
+            if abs(convertedDz - self._DZ_ICO_RANGE) < self._DZ_TOLERANCE:
+                return "IcoRange"
+            elif abs(convertedDz - self._DZ_ICO_DEEP) < self._DZ_TOLERANCE:
+                return "IcoDeep"
+            elif abs(convertedDz - self._DZ_ICO_BRIGHT) < self._DZ_TOLERANCE:
+                return "IcoBright"
+            elif abs(convertedDz - self._DZ_ICO_PRIME) < self._DZ_TOLERANCE:
+                if sizeX == 128:
+                    return "IcoPrime"
+                elif sizeX == 192:
+                    return "IcoPrimeXL"
+                else:
+                    return "IcoPrimeMini"
+            else:
+                return "unknown"
 
     def fill_default(self) -> None:
         """
