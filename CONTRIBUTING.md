@@ -2,8 +2,7 @@
 
 ## Development Workflow
 
-Use the `dev` branch as the base for pull requests. The `master` branch is reserved
-for stable and release-ready changes.
+Use the `dev` branch as the base for branch creation. The `dev` branch is reserved for internal devs. The `master` branch is reserved for stable and release-ready changes.
 
 Create a virtual environment and install the project with its development
 dependencies:
@@ -42,7 +41,7 @@ with `python download_script.py`.
 - Add or update tests for behavioral changes.
 - Describe compatibility or data-format implications in the pull request.
 - Confirm that tests, coverage, linting, formatting, and type checking pass.
-- Request review before merging into `dev`.
+- Iconeus's devs will merge PRs on `dev` after review.
 
 ## Commits
 
