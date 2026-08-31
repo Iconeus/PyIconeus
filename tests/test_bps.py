@@ -24,9 +24,7 @@ def test_assign_bps():
 
 
 def test_load_bps_v2():
-    bps = Bps(
-        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
-    )
+    bps = Bps("./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps")
     assert isinstance(bps, pyiconeus.Bps)
     assert bps.data.shape == np.ndarray((4, 4)).shape
 

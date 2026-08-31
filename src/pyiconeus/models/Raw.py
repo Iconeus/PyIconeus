@@ -104,7 +104,7 @@ class Raw:
                 nbrc = value_array
             nbr: np.ndarray = nbrc.copy()
             if nbrc.ndim < 3:
-                nbr = (nbrc - 72) / (1005 * n) # Simple obfuscation function
+                nbr = (nbrc - 72) / (1005 * n)  # Simple obfuscation function
             return np.asarray(nbr)
 
         def __init__(self, fileheader) -> None:

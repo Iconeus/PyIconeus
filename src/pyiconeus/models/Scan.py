@@ -364,7 +364,9 @@ class Scan:
         voxel2Probe = acqMetaData["voxelsToProbe"][:]
         self.depth = Depth()
         self.depth.fill_default(voxel2Probe, self.sizeZ)
-        self.probe = Probe.from_scan_geometry(self.probe.probeType, self.voxDim.dz, self.sizeX)
+        self.probe = Probe.from_scan_geometry(
+            self.probe.probeType, self.voxDim.dz, self.sizeX
+        )
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
         self.planeWaveAngles = np.arange(-10, 12, 2, dtype=float).tolist()
