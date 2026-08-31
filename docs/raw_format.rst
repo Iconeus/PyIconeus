@@ -15,7 +15,7 @@ Attributes
 +++++++++++++
 
 metadata : MetaData
-	metadata of the raw file (mandatory)
+    metadata of the raw file (mandatory)
 
 data : np.ndarray
     NumPy array containing the complex IQ data after beamforming. The leading
@@ -75,4 +75,4 @@ blocks and a ``RuntimeWarning`` is emitted. ``blockEnd`` smaller than
 ``blockStart`` raises ``RuntimeError``.
 
 acquisitionMode : str
-	Type of acquisition
+    Type of acquisition

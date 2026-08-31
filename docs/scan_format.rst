@@ -70,6 +70,9 @@ subjectDescription : str
 weight : float
     Weight of the subject, in **weightUnit**
 
+weightUnit : :class:`~pyiconeus.models.Scan.WeightUnitType`
+    Unit of the **weight** value
+
 Acquisition parameters
 ++++++++++++++++++++++++
 
@@ -86,7 +89,7 @@ probe : :class:`~pyiconeus.models.Scan.Probe`
     Description about the probe used for the Acquisition, see the :ref:`probe-section` section below
 
 depth : :class:`~pyiconeus.models.Scan.Depth`
-    Depth far and near of the acquisition, see the :ref:`depth-section` *section below*
+    Depth far and near of the acquisition, see the :ref:`depth-section` section below
 
 ultrafastTransmitFrequency : float
     Frequency of the transmit, in MHz
@@ -266,7 +269,7 @@ IcoScanVersion
 ----------------
 
 major, minor, patch : int
-    Version  identification numbers
+    Version identification numbers
 
 Enumerations
 -------------
@@ -290,5 +293,9 @@ Proc scans are processed scans.
 AcquisitionMode
 ++++++++++++++++
 
-``_2DScan``, ``_3DScan``, ``_4DScan``, ``_4DScanCustom``, ``_4DscanRCA``,
-``_3DscanRCA``
+``fUS2D``, ``Angio3D``, ``fUS3D``, ``fUS3DCustom``
+
+Legacy ``.scan`` files may store the raw acquisition-mode labels ``2DScan``,
+``3DScan``, ``4DScan``, ``4DScanCustom``, ``4DscanRCA`` and ``3DscanRCA``;
+the two RCA variants are remapped to ``fUS3D`` and ``Angio3D`` respectively
+when the file is read.

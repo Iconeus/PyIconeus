@@ -40,8 +40,8 @@ You can create a virtual environment using uv:
 
 ```console
 uv venv
-   .venv/Scripts/activate.ps1   # Windows
-   source .venv/bin/activate    # Linux/macOS
+.venv/Scripts/activate       # Windows
+source .venv/bin/activate    # Linux/macOS
 ```
 
 2. Install PyIconeus
