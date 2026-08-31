@@ -202,7 +202,7 @@ class Scan:
             self.integrationWindowDuration = float(acqMetaData["voxDim"]["dt"][0][0])
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"], dt, dy)
-            self.fill_default(f)
+            self.fill_default(acqMetaData, f["scanMetaData"])
 
     def _load_hdf5_data(
         self, f: h5py.File, acqMetaData: h5py.Dataset
@@ -218,7 +218,7 @@ class Scan:
         if dt == 0:
             dt = integration_time
         dy: float | None = float(acqMetaData["voxDim"]["dy"][0][0])
-        if not self.can_be_consolidated(f):
+        if not self.can_be_consolidated(f["Data"][:]):
             self._load_nonconsolidated_data(f)
             self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
             self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
@@ -336,7 +336,9 @@ class Scan:
             case _:
                 raise ValueError(f"Unsupported acquisition mode: {_acquisitionMode!r}")
 
-    def fill_default(self, f: h5py.Group) -> None:
+    def fill_default(
+        self, acqMetaData: h5py.Dataset, scanMetaData: h5py.Dataset
+    ) -> None:
         """
         Fill all missing values for the HDF5 file with their respective default values
 
@@ -360,7 +362,7 @@ class Scan:
         clutDefault.clutterFilterWindowDuration = self.integrationWindowDuration
         self.dim6.dim6element.add((Dim6.Dim6Intent.ClutterFiltering, clutDefault))
         self.depth = Depth()
-        voxel2Probe = f["acqMetaData"]["voxelsToProbe"][:]
+        voxel2Probe = acqMetaData["voxelsToProbe"][:]
         self.depth.fill_default(voxel2Probe, self.sizeZ)
         dzIcoBright = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
         dzIcoPrime = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
@@ -405,7 +407,6 @@ class Scan:
 
         refDate = datetime(1970, 1, 1, 0, 0, 0, 0, pytz.utc)
         self.gender = GenderType.Undefined
-        self.projectDescription = hdf5_string_reader(f["scanMetaData"]["Comment"])
         self.species = "Unknown"
         self.transferDate = refDate
         self.ageAtTransfer = 0
@@ -418,7 +419,7 @@ class Scan:
         self.taskDescription = "none"
         self.stimulationToggleTimes = []
         self.fill_ico_scan_version(
-            hdf5_string_reader(f["scanMetaData"]["Neuroscan_version"])
+            hdf5_string_reader(scanMetaData["Neuroscan_version"])
         )
 
     def fill_ico_scan_version(self, neuroscan: str) -> None:
@@ -453,22 +454,24 @@ class Scan:
         patch = int(match.group(3) or 0)
         self.icoScanVersion = IcoScanVersion(major, minor, patch)
 
-    def can_be_consolidated(self, hdf5_data: h5py.Dataset) -> bool:
+    def can_be_consolidated(self, data: np.ndarray) -> bool:
         """
         Check whether the HDF5 data can use the regular consolidation path.
 
+        Scan cannot be consolidated if its probe is an RCA probe, is a custom scan,
+        or is a Static Multy-Array scan (Multy-Array probe with only one pose).
         Parameters
         ----------
 
-        **hdf5_data**: h5py.Dataset
-            The HDF5 root dataset
+        **data** np.ndarray
+            The scan data
 
         Returns
         -------
         bool
             Returns True if the scan can be consolidated, False otherwise.
         """
-        data_shape = hdf5_data["Data"].shape
+        data_shape = data.shape
         if (
             self.probe.probeType == Probe.ProbeType.RCA
             or self.acquisitionMode == AcquisitionMode.fUS3DCustom
@@ -482,7 +485,7 @@ class Scan:
             return False
         return True
 
-    def _load_nonconsolidated_data(self, hdf5_data: h5py.Dataset) -> None:
+    def _load_nonconsolidated_data(self, hdf5_data: h5py.File) -> None:
         """Load HDF5 layouts that do not use regular consolidation."""
         data_shape = hdf5_data["Data"].shape
         if self.probe.probeType == Probe.ProbeType.RCA:
