@@ -220,35 +220,6 @@ def scale_matrix(sx: float, sy: float, sz: float) -> np.ndarray:
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
 
 
-def decrypt_data(value: np.ndarray, n: int) -> np.ndarray:
-    """
-    Util function to decrypt raw data that have been encrypted in first versions of '.raw' files
-
-    Parameters
-    ----------
-
-    **value**: np.ndarray
-        The crypted value
-    **n**: int
-        The index of the element in the hdf5 to be decrypted
-
-    Returns
-    -------
-
-    **nbr**: np.ndarray
-        The decrypted value
-    """
-    value_array = np.asarray(value, dtype=float)
-    if value_array.size == 1:
-        nbrc: np.ndarray = value_array.reshape(-1)[0]
-    else:
-        nbrc = value_array
-    nbr: np.ndarray = nbrc.copy()
-    if nbrc.ndim < 3:
-        nbr = (nbrc - 72) / (1005 * n)
-    return np.asarray(nbr)
-
-
 def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDArray:
     """Applies a affine transform to 3D-points
 

@@ -9,7 +9,6 @@ from pytest import mark
 import pyiconeus
 from pyiconeus import Raw
 from pyiconeus.models.Scan import Depth, VoxDim
-from pyiconeus.utils.utils import decrypt_data
 
 
 def test_read_raw():
@@ -22,12 +21,14 @@ def test_raw_val():
     metadata: pyiconeus.Raw.MetaData = pyiconeus.Raw.MetaData(
         "./tests/data" + "/2DScan_v2.hraw"
     )
-    metadata.transmitFrequency = float(decrypt_data(np.array([15775.125]), 1))
-    metadata.prf = float(decrypt_data(np.array([22110072]), 2))
-    metadata.speedOfSound = float(decrypt_data(np.array([4643172]), 3))
-    metadata.frameRate = float(decrypt_data(np.array([4020072]), 4))
-    metadata.receiveAperture = decrypt_data(np.array([5097, 643272]), 5)
-    metadata.flatAngles = decrypt_data(
+    metadata.transmitFrequency = float(
+        Raw.MetaData.decrypt_data(np.array([15775.125]), 1)
+    )
+    metadata.prf = float(Raw.MetaData.decrypt_data(np.array([22110072]), 2))
+    metadata.speedOfSound = float(Raw.MetaData.decrypt_data(np.array([4643172]), 3))
+    metadata.frameRate = float(Raw.MetaData.decrypt_data(np.array([4020072]), 4))
+    metadata.receiveAperture = Raw.MetaData.decrypt_data(np.array([5097, 643272]), 5)
+    metadata.flatAngles = Raw.MetaData.decrypt_data(
         np.array(
             [
                 -70278,
@@ -45,14 +46,16 @@ def test_raw_val():
         ),
         7,
     )
-    metadata.blockDim = decrypt_data(
+    metadata.blockDim = Raw.MetaData.decrypt_data(
         np.array([1157832, 9117, 823167, 9117, 3618072]), 9
     )
-    metadata.compound = bool(decrypt_data(np.array([10122]), 10))
-    metadata.numberOfBlock = int(decrypt_data(np.array([99567]), 11))
+    metadata.compound = bool(Raw.MetaData.decrypt_data(np.array([10122]), 10))
+    metadata.numberOfBlock = int(Raw.MetaData.decrypt_data(np.array([99567]), 11))
     metadata.acquisitionMode = "2Dscan"
-    depthData = decrypt_data(np.array([6102, 60372]), 6)
-    voxDimData = decrypt_data(np.array([956.4, 3288, 864.4223999999999]), 8)
+    depthData = Raw.MetaData.decrypt_data(np.array([6102, 60372]), 6)
+    voxDimData = Raw.MetaData.decrypt_data(
+        np.array([956.4, 3288, 864.4223999999999]), 8
+    )
     metadata.depth = Depth()
     metadata.depth.depthNear = depthData[0]
     metadata.depth.depthFar = depthData[1]
