@@ -5,7 +5,6 @@
 import numpy as np
 from pytest import mark
 
-from pyiconeus.io.base import SCAN_4CC_STR, check_fourCC
 from pyiconeus.models.Scan import (
     AcquisitionMode,
     Dim6,
@@ -15,16 +14,9 @@ from pyiconeus.models.Scan import (
 )
 
 
-def test_check_fourCC():
-    assert check_fourCC(
-        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan",
-        SCAN_4CC_STR,
-    )
-
-
 def test_scan():
     scan = Scan(
-        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
+        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"
     )
     assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode.fUS3D
@@ -32,12 +24,12 @@ def test_scan():
 
 @mark.filterwarnings("ignore::RuntimeWarning")
 def test_2D_Scan():
-    scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
+    scan = Scan("./tests/data" + "/2DScan_v2.source.scan")
     print(scan)
     assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode.fUS2D
     assert scan.sizeY == 1
-    scan = Scan("./tests/data" + "/2DScan.source.scan", False)
+    scan = Scan("./tests/data" + "/2DScan.source.scan")
     print(scan)
     assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode.fUS2D
@@ -48,7 +40,6 @@ def test_3D_Scan():
     scan = Scan(
         "./tests/data/"
         + "sub-souris1_ses-Session_2021-3-9_Angio3Dscan_angio3D.source.scan",
-        False,
     )
     assert isinstance(scan, Scan)
     assert scan.acquisitionMode == AcquisitionMode.Angio3D
@@ -56,7 +47,7 @@ def test_3D_Scan():
 
 def test_scan_values():
     scan = Scan(
-        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
+        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"
     )
     assert scan.sizeX == 103
     assert len(scan.measuredTimes) == 5200
@@ -64,7 +55,7 @@ def test_scan_values():
 
 
 def test_scan_values_ULM_2D():
-    scan: Scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
+    scan: Scan = Scan("./tests/data" + "/2DScan_v2.source.scan")
     assert scan.sizeX == 128
     assert scan.sizeY == 1
     assert scan.sizeZ == 91
@@ -98,7 +89,7 @@ def test_velocity_bandwidth_filtering_string():
 
 
 def test_voxel_to_prob():
-    scan: Scan = Scan("./tests/data" + "/2DScan_v2.source.scan", True)
+    scan: Scan = Scan("./tests/data" + "/2DScan_v2.source.scan")
     vTp = scan.get_voxel_to_probe()
     print("VoxelToProbeCreation")
     print(vTp)
@@ -108,7 +99,7 @@ def test_voxel_to_prob():
 
 def test_load_v1():
     scanv1: Scan = Scan(
-        "./tests/data" + "/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False
+        "./tests/data" + "/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan"
     )
     assert isinstance(scanv1, Scan)
     assert scanv1.nPose == 1
@@ -116,10 +107,10 @@ def test_load_v1():
 
 def test_compare_v1_v2_scanmetaData():
     scanv1: Scan = Scan(
-        "./tests/data" + "/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False
+        "./tests/data" + "/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan"
     )
     scanv2: Scan = Scan(
-        "./tests/data" + "/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan", True
+        "./tests/data" + "/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan"
     )
     assert scanv1.projectTag == scanv2.projectTag
     assert scanv1.projectDescription == scanv2.projectDescription
@@ -149,11 +140,9 @@ def test_compare_v1_v2_scanmetaData():
 
 
 def test_compare_matrices():
-    scanv1: Scan = Scan(
-        "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False
-    )
+    scanv1: Scan = Scan("./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan")
     scanv2: Scan = Scan(
-        "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan", True
+        "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan"
     )
 
     assert isinstance(scanv1, Scan)
@@ -164,11 +153,9 @@ def test_compare_matrices():
 
 
 def test_compare_acqMetaData():
-    scanv1: Scan = Scan(
-        "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan", False
-    )
+    scanv1: Scan = Scan("./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan")
     scanv2: Scan = Scan(
-        "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan", True
+        "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan"
     )
     assert scanv1.sizeX == scanv2.sizeX
     assert scanv1.sizeY * scanv1.nPose == scanv2.sizeY
@@ -193,8 +180,8 @@ def test_compare_acqMetaData():
 
 
 def test_4DCustomScan():
-    scan: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.scan", False)
-    scanv2: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.v2.scan", True)
+    scan: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.scan")
+    scanv2: Scan = Scan("./tests/data" + "/020222_M297_SHAM_4DfUS1.v2.scan")
     assert isinstance(scan, Scan)
     assert scan.probeToLabsTranslations.shape[0] == 3
     assert scan.sizeX == 128
@@ -224,14 +211,12 @@ def test_4DCustomScan():
 
 
 def test_RCA_loading():
-    scan: Scan = Scan(
-        "./tests/data" + "/4Dscan_1_15_15_15_8_fus3D.source_v2.scan", True
-    )
+    scan: Scan = Scan("./tests/data" + "/4Dscan_1_15_15_15_8_fus3D.source_v2.scan")
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
     assert scan.acquisitionMode == AcquisitionMode.fUS3D
     assert scan.probe.name == "IcoPrime"
-    scan = Scan("./tests/data/" + "RCA_4Dscan_2_fus3D.source.scan", False)
+    scan = Scan("./tests/data/" + "RCA_4Dscan_2_fus3D.source.scan")
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
     assert scan.acquisitionMode == AcquisitionMode.fUS3D

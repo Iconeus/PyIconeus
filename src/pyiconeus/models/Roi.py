@@ -7,7 +7,12 @@ import os
 import h5py
 import numpy as np
 
-from ..utils.utils import _read_struct, hdf5_string_reader, read_string_binary
+from ..utils.utils import (
+    _read_struct,
+    check_fourCC,
+    hdf5_string_reader,
+    read_string_binary,
+)
 
 _MAX_ROI_COUNT = 100_000
 _MAX_MESH_ELEMENTS = 10_000_000
@@ -34,9 +39,11 @@ class Roi:
         Each row contains the indices of the vertices composing a triangle of the volume
     """
 
-    def __init__(self, filepath: str | os.PathLike[str], is_binary: bool):
+    ROI_4CC_STR = "bri_"
+
+    def __init__(self, filepath: str | os.PathLike[str]):
         self.list: list[RoiElements] = []
-        if is_binary:
+        if check_fourCC(filepath, self.ROI_4CC_STR):
             with open(filepath, "rb") as f:
                 f.seek(12)
                 roi_count: int = _read_struct(f, "<L")

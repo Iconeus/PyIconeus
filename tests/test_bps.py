@@ -5,26 +5,26 @@
 import numpy as np
 
 import pyiconeus
-from pyiconeus.io.base import read_bps
+from pyiconeus import Bps
 
 
 def test_bps_load():
-    bps: pyiconeus.Bps = read_bps("./tests/data" + "/Mouse.bps")
+    bps: pyiconeus.Bps = Bps("./tests/data" + "/Mouse.bps")
     assert isinstance(bps, pyiconeus.Bps)
     assert bps.data.shape == np.ndarray((4, 4)).shape
 
 
 def test_assign_bps():
     scan: pyiconeus.Scan = pyiconeus.Scan(
-        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", True
+        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"
     )
-    bps: pyiconeus.Bps = read_bps("./tests/data" + "/Mouse.bps")
+    bps: pyiconeus.Bps = Bps("./tests/data" + "/Mouse.bps")
     scan.bps = bps
     assert isinstance(bps, pyiconeus.Bps)
 
 
 def test_load_bps_v2():
-    bps = read_bps(
+    bps = Bps(
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
     )
     assert isinstance(bps, pyiconeus.Bps)
@@ -55,7 +55,7 @@ def test_bps_v2_data():
             [0.0, 0.0, 0.0, 1.0],
         ]
     )
-    bps: pyiconeus.Bps = read_bps(
+    bps: pyiconeus.Bps = Bps(
         "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.bps"
     )
     assert np.allclose(bps.data, data_true)

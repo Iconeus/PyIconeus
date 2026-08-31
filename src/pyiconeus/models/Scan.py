@@ -16,6 +16,7 @@ from ..models.Bps import Bps
 from ..utils.consolidation import consolidate_scan, theoretical_time_indices
 from ..utils.utils import (
     _read_struct,
+    check_fourCC,
     hdf5_string_reader,
     inverse_rotation_xyz,
     read_string_binary,
@@ -110,7 +111,9 @@ class Scan:
         Optional Brain-to-Lab affine transform.
     """
 
-    def __init__(self, filepath: str | os.PathLike[str], is_binary: bool) -> None:
+    SCAN_4CC_STR = "scan"
+
+    def __init__(self, filepath: str | os.PathLike[str]) -> None:
         """Scan class constructor. Reads the input file depending on the type set in 'is_binary'.
         For scans v1 (not binary), the scan is filled with a lot of default values, matching the v2 format.
 
@@ -173,7 +176,7 @@ class Scan:
         self.icoScanVersion: IcoScanVersion | None = None
         self.voxels: np.ndarray
         self.bps: Bps | None = None
-        if is_binary:
+        if check_fourCC(filepath, self.SCAN_4CC_STR):
             self.load_scan_binary(filepath)
         else:
             self.load_scan_hdf5(filepath)

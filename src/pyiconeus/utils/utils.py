@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os
 import struct
 from io import BufferedReader
 
@@ -10,6 +11,25 @@ import numpy as np
 import numpy.typing as npt
 
 _MAX_BINARY_STRING_SIZE = 16 * 1024 * 1024
+
+
+def check_fourCC(filepath: str | os.PathLike[str], str_check: str) -> bool:
+    """Check whether a file's leading 4-byte magic number matches str_check."""
+    try:
+        with open(filepath, "rb") as f:
+            header = f.read(4)
+    except OSError as e:
+        raise OSError(f"Could not read {filepath!r}: {e}") from e
+
+    if len(header) < 4:
+        return False
+
+    try:
+        fourCC = header.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+
+    return fourCC == str_check
 
 
 def _read_exact(stream: BufferedReader, size: int) -> bytes:
