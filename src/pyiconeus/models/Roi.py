@@ -67,7 +67,7 @@ class Roi:
                         float(_read_struct(f, "<f")),
                         float(_read_struct(f, "<f")),
                     )
-                    label: str = read_string_binary(f, "<L", 4)
+                    label: str = read_string_binary(f, "<L")
                     self.list.append(RoiElements(color, vertices, triangles, label))
         else:
             with h5py.File(filepath, "r") as f:

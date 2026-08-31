@@ -33,6 +33,30 @@ def check_fourCC(filepath: str | os.PathLike[str], str_check: str) -> bool:
 
 
 def _read_exact(stream: BufferedReader, size: int) -> bytes:
+    """
+    A truncated/corrupted binary file would either silently produce wrong data
+    (parsing fewer bytes than expected as if they were the real field)
+    or crash later with a cryptic struct.error: unpack requires a buffer of N bytes,
+    with no indication of where in the file things went wrong.
+
+    The read_exact function turns that into a clear, immediate, actionable OSError right at the point of failure.
+
+    Parameters
+    ----------
+
+    **stream**: BufferReader
+        Stream buffer of the file
+
+    **size**: int
+        Size of the value to read
+
+    Returns
+    -------
+
+    bytes
+        the decoded bytes
+
+    """
     if size < 0:
         raise ValueError("size must be non-negative")
     offset = stream.tell()
@@ -45,6 +69,33 @@ def _read_exact(stream: BufferedReader, size: int) -> bytes:
 
 
 def _read_struct(stream: BufferedReader, format: str):
+    """
+    1. struct.calcsize(format) — computes how many bytes the given struct format code needs.
+        E.g. "<d" (little-endian double) → 8 bytes, "<Q" (little-endian uint64) → 8 bytes, "<L" (little-endian uint32) → 4 bytes,
+        "<f" (little-endian float32) → 4 bytes, "<?" (bool) → 1 byte.
+
+    2. _read_exact(stream, size) — reads exactly that many bytes, raising OSError
+        if the file runs out early (the truncation-safety wrapper I explained earlier).
+    3. struct.unpack(format, data) — decodes those raw bytes according to format.
+        unpack always returns a tuple, even for a single value (e.g. unpack("<d", data) → (3.14,)).
+    4. [0] — takes just the first element.
+
+    Parameters
+    ----------
+
+    **stream**: BufferReader
+        Stream buffer of the file
+
+    **format**: str
+        String containing the endianness and the type of the value to read
+
+    Returns
+    -------
+
+    Any:
+        The decoded value
+
+    """
     return struct.unpack(format, _read_exact(stream, struct.calcsize(format)))[0]
 
 
@@ -99,7 +150,7 @@ def hdf5_printer(hdf5_dataset: h5py.Dataset) -> None:
     print(f"Nbytes: {hdf5_dataset.nbytes}")
 
 
-def read_string_binary(f: BufferedReader, format: str, bytes_size: int) -> str:
+def read_string_binary(f: BufferedReader, format: str) -> str:
     """
     String reader for Iconeus binary files
 
@@ -110,16 +161,14 @@ def read_string_binary(f: BufferedReader, format: str, bytes_size: int) -> str:
         Binary file stream
     **format**: str
         String format for struct.unpack. Tells the type of the element to read
-    **bytes_size**: int
-        Number of element of type 'format' to read
 
     Returns
     -------
 
     str
-        The resulted string of size 'bytes_size'
+        The resulted string
     """
-    string_size = struct.unpack(format, _read_exact(f, bytes_size))[0]
+    string_size = _read_struct(f, format)
     if string_size > _MAX_BINARY_STRING_SIZE:
         raise ValueError(f"binary string is too large: {string_size} bytes")
     return _read_exact(f, string_size).decode("utf-8").strip("\x00 ")
