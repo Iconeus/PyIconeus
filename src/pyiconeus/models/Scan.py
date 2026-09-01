@@ -111,6 +111,35 @@ class Scan:
         Optional Brain-to-Lab affine transform.
     """
 
+    @staticmethod
+    def is_static_multiarray(
+        data_shape: tuple[int, ...], acquisition_mode: "AcquisitionMode"
+    ) -> bool:
+        """
+        Check if the data corresponds to a static Multi-Array acquisition in fUS3D mode.
+
+        Parameters
+        ----------
+
+        **data_shape**: tuple[int, ...]
+            The shape of the voxel data array.
+
+        **acquisition_mode**: AcquisitionMode
+            The type of acquisition mode.
+
+        Returns
+        -------
+
+        bool
+            True if the data shape and acquisition mode match a static Multi-Array fUS3D scan (shape[1] == 4, shape[4] == 1), False otherwise.
+        """
+        return (
+            len(data_shape) > 4
+            and data_shape[1] == 4
+            and data_shape[4] == 1
+            and acquisition_mode == AcquisitionMode.fUS3D
+        )
+
     SCAN_4CC_STR = "scan"
 
     def __init__(self, filepath: str | os.PathLike[str]) -> None:
@@ -432,7 +461,7 @@ class Scan:
         Check whether the HDF5 data can use the regular consolidation path.
 
         Scan cannot be consolidated if its probe is an RCA probe, is a custom scan,
-        or is a Static Multy-Array scan (Multy-Array probe with only one pose).
+        or is a Static Multi-Array scan (Multi-Array probe with only one pose).
         Parameters
         ----------
 
@@ -448,12 +477,7 @@ class Scan:
         if (
             self.probe.probeType == Probe.ProbeType.RCA
             or self.acquisitionMode == AcquisitionMode.fUS3DCustom
-            or (
-                len(data_shape) > 4
-                and data_shape[1] == 4
-                and data_shape[4] == 1
-                and self.acquisitionMode == AcquisitionMode.fUS3D
-            )
+            or self.is_static_multiarray(data_shape, self.acquisitionMode)
         ):
             return False
         return True
@@ -478,12 +502,7 @@ class Scan:
             self.measuredTimes = np.reshape(time, (nPose * blockRepeat)).tolist()
             self.probe.probeType = Probe.ProbeType.Linear
             self.voxels = data
-        elif (
-            len(data_shape) > 4
-            and data_shape[1] == 4
-            and data_shape[4] == 1
-            and self.acquisitionMode == AcquisitionMode.fUS3D
-        ):
+        elif self.is_static_multiarray(data_shape, self.acquisitionMode):
             data = hdf5_data["Data"][:].T
             data = np.transpose(data, axes=(0, 3, 2, 5, 1, 6, 4))
             self.nPose = 4
