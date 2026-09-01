@@ -7,11 +7,18 @@ import numpy as np
 
 from pyiconeus.utils.consolidation import theoretical_time_indices
 from pyiconeus.utils.utils import (
+    check_fourCC,
     hdf5_printer,
     hdf5_string_reader,
     inverse_rotation_xyz,
     rotation_xyz,
 )
+
+
+def test_check_fourCC():
+    assert check_fourCC(
+        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", "scan"
+    )
 
 
 def test_hdf5_printer():

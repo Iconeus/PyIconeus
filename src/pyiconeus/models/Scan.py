@@ -16,6 +16,7 @@ from ..models.Bps import Bps
 from ..utils.consolidation import consolidate_scan, theoretical_time_indices
 from ..utils.utils import (
     _read_struct,
+    check_fourCC,
     hdf5_string_reader,
     inverse_rotation_xyz,
     read_string_binary,
@@ -110,7 +111,9 @@ class Scan:
         Optional Brain-to-Lab affine transform.
     """
 
-    def __init__(self, filepath: str | os.PathLike[str], is_binary: bool) -> None:
+    SCAN_4CC_STR = "scan"
+
+    def __init__(self, filepath: str | os.PathLike[str]) -> None:
         """Scan class constructor. Reads the input file depending on the type set in 'is_binary'.
         For scans v1 (not binary), the scan is filled with a lot of default values, matching the v2 format.
 
@@ -173,7 +176,7 @@ class Scan:
         self.icoScanVersion: IcoScanVersion | None = None
         self.voxels: np.ndarray
         self.bps: Bps | None = None
-        if is_binary:
+        if check_fourCC(filepath, self.SCAN_4CC_STR):
             self.load_scan_binary(filepath)
         else:
             self.load_scan_hdf5(filepath)
@@ -199,7 +202,7 @@ class Scan:
             self.integrationWindowDuration = float(acqMetaData["voxDim"]["dt"][0][0])
             self.voxDim = VoxDim()
             self.voxDim.load_hdf5(acqMetaData["voxDim"], dt, dy)
-            self.fill_default(f)
+            self.fill_default(acqMetaData, f["scanMetaData"])
 
     def _load_hdf5_data(
         self, f: h5py.File, acqMetaData: h5py.Dataset
@@ -215,7 +218,7 @@ class Scan:
         if dt == 0:
             dt = integration_time
         dy: float | None = float(acqMetaData["voxDim"]["dy"][0][0])
-        if not self.can_be_consolidated(f):
+        if not self.can_be_consolidated(f["Data"][:]):
             self._load_nonconsolidated_data(f)
             self.nPose = self.voxels.shape[4] if self.voxels.ndim > 4 else 1
             self.nTime = acqMetaData["imgDim"]["nscanRepeat"][()][0][0]
@@ -333,7 +336,9 @@ class Scan:
             case _:
                 raise ValueError(f"Unsupported acquisition mode: {_acquisitionMode!r}")
 
-    def fill_default(self, f: h5py.Group) -> None:
+    def fill_default(
+        self, acqMetaData: h5py.Dataset, scanMetaData: h5py.Dataset
+    ) -> None:
         """
         Fill all missing values for the HDF5 file with their respective default values
 
@@ -356,39 +361,12 @@ class Scan:
         clutDefault.clutterFilterCutoffLow = 0
         clutDefault.clutterFilterWindowDuration = self.integrationWindowDuration
         self.dim6.dim6element.add((Dim6.Dim6Intent.ClutterFiltering, clutDefault))
+        voxel2Probe = acqMetaData["voxelsToProbe"][:]
         self.depth = Depth()
-        voxel2Probe = f["acqMetaData"]["voxelsToProbe"][:]
         self.depth.fill_default(voxel2Probe, self.sizeZ)
-        dzIcoBright = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
-        dzIcoPrime = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
-        dzIcoRange = np.trunc(1e8 * 1540 * 1e-6 / 8.9290)
-        dzIcoDeep = np.trunc(1e8 * 1540 * 1e-6 / 6.25)
-        myTolerance: float = 2
-        convertedDz = np.trunc(self.voxDim.dz * 1e8)
-        if self.probe.probeType == Probe.ProbeType.MultiArray:
-            self.probe.name = "IcoPrime 4D MultiArray"
-        elif self.probe.probeType == Probe.ProbeType.RCA:
-            if abs(convertedDz - dzIcoPrime) < myTolerance:
-                self.probe.name = "IcoPrime 4D RCA"
-            else:
-                self.probe.name = "IcoBright 4D RCA"
-        else:
-            if abs(convertedDz - dzIcoRange) < myTolerance:
-                self.probe.name = "IcoRange"
-            elif abs(convertedDz - dzIcoDeep) < myTolerance:
-                self.probe.name = "IcoDeep"
-            elif abs(convertedDz - dzIcoBright) < myTolerance:
-                self.probe.name = "IcoBright"
-            elif abs(convertedDz - dzIcoPrime) < myTolerance:
-                if self.sizeX == 128:
-                    self.probe.name = "IcoPrime"
-                elif self.sizeX == 192:
-                    self.probe.name = "IcoPrimeXL"
-                else:
-                    self.probe.name = "IcoPrimeMini"
-            else:
-                self.probe.name = "unknown"
-        self.probe.fill_default()
+        self.probe = Probe.from_scan_geometry(
+            self.probe.probeType, self.voxDim.dz, self.sizeX
+        )
         self.ultrafastTransmitFrequency = 15.625
         self.ultrafastSamplingFrequency = 62.5
         self.planeWaveAngles = np.arange(-10, 12, 2, dtype=float).tolist()
@@ -402,7 +380,6 @@ class Scan:
 
         refDate = datetime(1970, 1, 1, 0, 0, 0, 0, pytz.utc)
         self.gender = GenderType.Undefined
-        self.projectDescription = hdf5_string_reader(f["scanMetaData"]["Comment"])
         self.species = "Unknown"
         self.transferDate = refDate
         self.ageAtTransfer = 0
@@ -415,7 +392,7 @@ class Scan:
         self.taskDescription = "none"
         self.stimulationToggleTimes = []
         self.fill_ico_scan_version(
-            hdf5_string_reader(f["scanMetaData"]["Neuroscan_version"])
+            hdf5_string_reader(scanMetaData["Neuroscan_version"])
         )
 
     def fill_ico_scan_version(self, neuroscan: str) -> None:
@@ -450,22 +427,24 @@ class Scan:
         patch = int(match.group(3) or 0)
         self.icoScanVersion = IcoScanVersion(major, minor, patch)
 
-    def can_be_consolidated(self, hdf5_data: h5py.Dataset) -> bool:
+    def can_be_consolidated(self, data: np.ndarray) -> bool:
         """
         Check whether the HDF5 data can use the regular consolidation path.
 
+        Scan cannot be consolidated if its probe is an RCA probe, is a custom scan,
+        or is a Static Multy-Array scan (Multy-Array probe with only one pose).
         Parameters
         ----------
 
-        **hdf5_data**: h5py.Dataset
-            The HDF5 root dataset
+        **data** np.ndarray
+            The scan data
 
         Returns
         -------
         bool
             Returns True if the scan can be consolidated, False otherwise.
         """
-        data_shape = hdf5_data["Data"].shape
+        data_shape = data.shape
         if (
             self.probe.probeType == Probe.ProbeType.RCA
             or self.acquisitionMode == AcquisitionMode.fUS3DCustom
@@ -479,7 +458,7 @@ class Scan:
             return False
         return True
 
-    def _load_nonconsolidated_data(self, hdf5_data: h5py.Dataset) -> None:
+    def _load_nonconsolidated_data(self, hdf5_data: h5py.File) -> None:
         """Load HDF5 layouts that do not use regular consolidation."""
         data_shape = hdf5_data["Data"].shape
         if self.probe.probeType == Probe.ProbeType.RCA:
@@ -567,24 +546,24 @@ class Scan:
             self.isMultiplane = _read_struct(f, "<?")
             f.seek(1, 1)
             self.integrationWindowDuration = _read_struct(f, "<d")
-            self.sequenceName = read_string_binary(f, "<L", 4)
-            self.projectTag = read_string_binary(f, "<L", 4)
-            self.projectDescription = read_string_binary(f, "<L", 4)
-            self.subjectTag = read_string_binary(f, "<L", 4)
-            self.sessionTag = read_string_binary(f, "<L", 4)
-            self.species = read_string_binary(f, "<L", 4)
+            self.sequenceName = read_string_binary(f, "<L")
+            self.projectTag = read_string_binary(f, "<L")
+            self.projectDescription = read_string_binary(f, "<L")
+            self.subjectTag = read_string_binary(f, "<L")
+            self.sessionTag = read_string_binary(f, "<L")
+            self.species = read_string_binary(f, "<L")
             self.gender = GenderType(_read_struct(f, "<L"))
             self.transferDate = datetime.fromtimestamp(_read_struct(f, "<q"), pytz.utc)
             self.ageAtTransfer = _read_struct(f, "<Q")
-            self.subjectDescription = read_string_binary(f, "<L", 4)
+            self.subjectDescription = read_string_binary(f, "<L")
             self.weightUnit = WeightUnitType(_read_struct(f, "<L"))
             self.weight = _read_struct(f, "<f")
-            self.treatment = read_string_binary(f, "<L", 4)
-            self.scanTag = read_string_binary(f, "<L", 4)
-            self.studyType = read_string_binary(f, "<L", 4)
-            self.taskName = read_string_binary(f, "<L", 4)
-            self.taskDescription = read_string_binary(f, "<L", 4)
-            self.username = read_string_binary(f, "<L", 4)
+            self.treatment = read_string_binary(f, "<L")
+            self.scanTag = read_string_binary(f, "<L")
+            self.studyType = read_string_binary(f, "<L")
+            self.taskName = read_string_binary(f, "<L")
+            self.taskDescription = read_string_binary(f, "<L")
+            self.username = read_string_binary(f, "<L")
             for _ in range(2):
                 tempVal = _read_struct(f, "<L")
                 f.seek(tempVal, 1)
@@ -972,6 +951,12 @@ class AcquisitionMode(IntEnum):
 
 
 class Probe:
+    _DZ_ICO_BRIGHT = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
+    _DZ_ICO_PRIME = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
+    _DZ_ICO_RANGE = np.trunc(1e8 * 1540 * 1e-6 / 8.9290)
+    _DZ_ICO_DEEP = np.trunc(1e8 * 1540 * 1e-6 / 6.25)
+    _DZ_TOLERANCE = 2
+
     class ProbeType(IntEnum):
         Linear = 0
         MultiArray = 1
@@ -988,6 +973,43 @@ class Probe:
         self.probeRadiusOfCurvature: float | None
         self.probeNumberOfElements: int | None
         self.probeModel: str | None
+
+    @classmethod
+    def from_scan_geometry(
+        cls, probe_type: "Probe.ProbeType", dz: float, sizeX: int
+    ) -> "Probe":
+        """Build a Probe with name and hardware defaults inferred from acquisition geometry."""
+        probe = cls()
+        probe.probeType = probe_type
+        probe.name = probe._infer_name(dz, sizeX)
+        probe.fill_default()
+        return probe
+
+    def _infer_name(self, dz: float, sizeX: int):
+        convertedDz = np.trunc(dz * 1e8)
+        if self.probeType == Probe.ProbeType.MultiArray:
+            return "IcoPrime 4D MultiArray"
+        elif self.probeType == Probe.ProbeType.RCA:
+            if abs(convertedDz - self._DZ_ICO_PRIME) < self._DZ_TOLERANCE:
+                return "IcoPrime 4D RCA"
+            else:
+                return "IcoBright 4D RCA"
+        else:
+            if abs(convertedDz - self._DZ_ICO_RANGE) < self._DZ_TOLERANCE:
+                return "IcoRange"
+            elif abs(convertedDz - self._DZ_ICO_DEEP) < self._DZ_TOLERANCE:
+                return "IcoDeep"
+            elif abs(convertedDz - self._DZ_ICO_BRIGHT) < self._DZ_TOLERANCE:
+                return "IcoBright"
+            elif abs(convertedDz - self._DZ_ICO_PRIME) < self._DZ_TOLERANCE:
+                if sizeX == 128:
+                    return "IcoPrime"
+                elif sizeX == 192:
+                    return "IcoPrimeXL"
+                else:
+                    return "IcoPrimeMini"
+            else:
+                return "unknown"
 
     def fill_default(self) -> None:
         """
@@ -1042,8 +1064,8 @@ class Probe:
         f.seek(8, 1)
         self.probeRadiusOfCurvature = _read_struct(f, "<d")
         self.probeNumberOfElements = _read_struct(f, "<H")
-        self.probeModel = read_string_binary(f, "<H", 2)
-        self.name = read_string_binary(f, "<H", 2)
+        self.probeModel = read_string_binary(f, "<H")
+        self.name = read_string_binary(f, "<H")
 
     def __str__(self) -> str:
         return (

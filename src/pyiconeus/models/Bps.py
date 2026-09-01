@@ -7,7 +7,7 @@ import os
 import h5py
 import numpy as np
 
-from ..utils.utils import _read_struct
+from ..utils.utils import _read_struct, check_fourCC
 
 
 class Bps:
@@ -21,10 +21,10 @@ class Bps:
         The affine matrix
     """
 
-    def __init__(
-        self, filepath: str | os.PathLike[str], is_binary: bool = False
-    ) -> None:
-        if is_binary:
+    BPS_4CC_STR = "bps_"
+
+    def __init__(self, filepath: str | os.PathLike[str]) -> None:
+        if check_fourCC(filepath, self.BPS_4CC_STR):
             with open(filepath, "rb") as f:
                 self.data: np.ndarray = np.ndarray(shape=(4, 4), dtype=float)
                 f.seek(12)

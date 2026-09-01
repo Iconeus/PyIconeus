@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os
 import struct
 from io import BufferedReader
 
@@ -12,7 +13,50 @@ import numpy.typing as npt
 _MAX_BINARY_STRING_SIZE = 16 * 1024 * 1024
 
 
+def check_fourCC(filepath: str | os.PathLike[str], str_check: str) -> bool:
+    """Check whether a file's leading 4-byte magic number matches str_check."""
+    try:
+        with open(filepath, "rb") as f:
+            header = f.read(4)
+    except OSError as e:
+        raise OSError(f"Could not read {filepath!r}: {e}") from e
+
+    if len(header) < 4:
+        return False
+
+    try:
+        fourCC = header.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+
+    return fourCC == str_check
+
+
 def _read_exact(stream: BufferedReader, size: int) -> bytes:
+    """
+    A truncated/corrupted binary file would either silently produce wrong data
+    (parsing fewer bytes than expected as if they were the real field)
+    or crash later with a cryptic struct.error: unpack requires a buffer of N bytes,
+    with no indication of where in the file things went wrong.
+
+    The read_exact function turns that into a clear, immediate, actionable OSError right at the point of failure.
+
+    Parameters
+    ----------
+
+    **stream**: BufferReader
+        Stream buffer of the file
+
+    **size**: int
+        Size of the value to read
+
+    Returns
+    -------
+
+    bytes
+        the decoded bytes
+
+    """
     if size < 0:
         raise ValueError("size must be non-negative")
     offset = stream.tell()
@@ -25,6 +69,33 @@ def _read_exact(stream: BufferedReader, size: int) -> bytes:
 
 
 def _read_struct(stream: BufferedReader, format: str):
+    """
+    1. struct.calcsize(format) — computes how many bytes the given struct format code needs.
+        E.g. "<d" (little-endian double) → 8 bytes, "<Q" (little-endian uint64) → 8 bytes, "<L" (little-endian uint32) → 4 bytes,
+        "<f" (little-endian float32) → 4 bytes, "<?" (bool) → 1 byte.
+
+    2. _read_exact(stream, size) — reads exactly that many bytes, raising OSError
+        if the file runs out early (the truncation-safety wrapper I explained earlier).
+    3. struct.unpack(format, data) — decodes those raw bytes according to format.
+        unpack always returns a tuple, even for a single value (e.g. unpack("<d", data) → (3.14,)).
+    4. [0] — takes just the first element.
+
+    Parameters
+    ----------
+
+    **stream**: BufferReader
+        Stream buffer of the file
+
+    **format**: str
+        String containing the endianness and the type of the value to read
+
+    Returns
+    -------
+
+    Any:
+        The decoded value
+
+    """
     return struct.unpack(format, _read_exact(stream, struct.calcsize(format)))[0]
 
 
@@ -79,7 +150,7 @@ def hdf5_printer(hdf5_dataset: h5py.Dataset) -> None:
     print(f"Nbytes: {hdf5_dataset.nbytes}")
 
 
-def read_string_binary(f: BufferedReader, format: str, bytes_size: int) -> str:
+def read_string_binary(f: BufferedReader, format: str) -> str:
     """
     String reader for Iconeus binary files
 
@@ -90,16 +161,14 @@ def read_string_binary(f: BufferedReader, format: str, bytes_size: int) -> str:
         Binary file stream
     **format**: str
         String format for struct.unpack. Tells the type of the element to read
-    **bytes_size**: int
-        Number of element of type 'format' to read
 
     Returns
     -------
 
     str
-        The resulted string of size 'bytes_size'
+        The resulted string
     """
-    string_size = struct.unpack(format, _read_exact(f, bytes_size))[0]
+    string_size = _read_struct(f, format)
     if string_size > _MAX_BINARY_STRING_SIZE:
         raise ValueError(f"binary string is too large: {string_size} bytes")
     return _read_exact(f, string_size).decode("utf-8").strip("\x00 ")
@@ -149,35 +218,6 @@ def scale_matrix(sx: float, sy: float, sz: float) -> np.ndarray:
         The 4x4 tform
     """
     return np.array([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]])
-
-
-def decrypt_data(value: np.ndarray, n: int) -> np.ndarray:
-    """
-    Util function to decrypt raw data that have been encrypted in first versions of '.raw' files
-
-    Parameters
-    ----------
-
-    **value**: np.ndarray
-        The crypted value
-    **n**: int
-        The index of the element in the hdf5 to be decrypted
-
-    Returns
-    -------
-
-    **nbr**: np.ndarray
-        The decrypted value
-    """
-    value_array = np.asarray(value, dtype=float)
-    if value_array.size == 1:
-        nbrc: np.ndarray = value_array.reshape(-1)[0]
-    else:
-        nbrc = value_array
-    nbr: np.ndarray = nbrc.copy()
-    if nbrc.ndim < 3:
-        nbr = (nbrc - 72) / (1005 * n)
-    return np.asarray(nbr)
 
 
 def transform_points_forward(tform: npt.NDArray, points: npt.NDArray) -> npt.NDArray:

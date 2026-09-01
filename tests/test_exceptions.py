@@ -7,7 +7,7 @@ import os
 import pytest
 
 from pyiconeus import open_path
-from pyiconeus.io.base import check_fourCC
+from pyiconeus.utils.utils import check_fourCC
 
 
 def test_invalid_file_open_path():
