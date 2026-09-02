@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 
 import requests
+from tqdm import tqdm
 
 RECORD_ID = "22249523"
 FILENAME = "test_data_pyiconeus.zip"
@@ -64,8 +65,19 @@ def download_test_data(dest: str, record_id: str, filename: str) -> bool:
     print("Downloading test data...")
     url = f"https://zenodo.org/records/{record_id}/files/{filename}"
     print(url)
+
+    response = requests.get(url, stream=True)
+
+    # Sizes in bytes.
+    total_size = int(response.headers.get("content-length", 0))
+    block_size = 1024
     archive = Path(filename)
-    urllib.request.urlretrieve(url, archive)
+
+    with tqdm(total=total_size, unit="B", unit_scale=True) as progress_bar:
+        with open(dest, "wb") as file:
+            for data in response.iter_content(block_size):
+                progress_bar.update(len(data))
+                file.write(data)
     destination.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(archive) as z:
         z.extractall(destination.parent)

@@ -21,7 +21,7 @@ keywords = [
   "bioimaging",
 ]
 authors = [
-  { name = "Iconeus" },
+  { name = "Iconeus" , email = "iconeus-dev@iconeus.com"},
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
