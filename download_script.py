@@ -2,7 +2,6 @@
 
 import hashlib
 import os
-import urllib.request
 import zipfile
 from pathlib import Path
 
@@ -74,7 +73,7 @@ def download_test_data(dest: str, record_id: str, filename: str) -> bool:
     archive = Path(filename)
 
     with tqdm(total=total_size, unit="B", unit_scale=True) as progress_bar:
-        with open(dest, "wb") as file:
+        with open(archive, "wb") as file:
             for data in response.iter_content(block_size):
                 progress_bar.update(len(data))
                 file.write(data)
