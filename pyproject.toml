@@ -43,6 +43,7 @@ dependencies = [
 test = [
   "pytest>=8",
   "requests",
+  "tqdm",
   "coverage",
 ]
 dev = [

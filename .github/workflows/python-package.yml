@@ -33,6 +33,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install requests
+        pip install tqdm
     - name: Restore test data cache
       id: test-data-cache
       uses: actions/cache@v5
