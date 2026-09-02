@@ -8,10 +8,10 @@ from pathlib import Path
 
 import requests
 
-RECORD_ID = "21807850"
-FILENAME = "data.zip"
+RECORD_ID = "22249523"
+FILENAME = "test_data_pyiconeus.zip"
 DESTINATION = "tests/data"
-LOCAL_PATH = "./data.zip"
+LOCAL_PATH = "./test_data_pyiconeus.zip"
 
 
 def get_zenodo_md5(record_id, filename):
