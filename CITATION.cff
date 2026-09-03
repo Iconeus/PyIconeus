@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: PyIconeus
+abstract: >-
+  Official open-source Python library from Iconeus to read and handle data
+  acquired with the Iconeus One preclinical functional ultrasound system.
+authors:
+  - name: "Iconeus"
+license: BSD-3-Clause
+repository-code: "https://github.com/Iconeus/PyIconeus"
+url: "https://iconeus.com/products/iconeus-one/"

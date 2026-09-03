@@ -1,0 +1,87 @@
+# SPDX-FileCopyrightText: 2026-present Iconeus
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+import os
+
+from ..models.Bps import Bps
+from ..models.Raw import Raw
+from ..models.Roi import Roi
+from ..models.Scan import Scan
+
+
+def dispatch_extension(
+    filepath: str | os.PathLike[str],
+    fileheader: str | os.PathLike[str] | None,
+    blockStart: int = 1,
+    blockEnd: int = 1,
+) -> Scan | Bps | Roi | Raw:
+    """Returns the correct PyIconeus object by checking the file format of the given path"""
+    filepath = os.fspath(filepath)
+    fileheader = os.fspath(fileheader) if fileheader is not None else None
+    extension = os.path.splitext(filepath)[1].lower()
+    match extension:
+        case ".scan":
+            return Scan(filepath)
+        case ".bps":
+            return Bps(filepath)
+        case ".bri":
+            return Roi(filepath)
+        case ".raw":
+            if not fileheader:
+                raise ValueError(
+                    f"{filepath!r} is a .raw file but no fileheader was provided"
+                )
+            if os.path.splitext(fileheader)[1].lower() != ".hraw":
+                raise ValueError(
+                    f"fileheader {fileheader!r} must end with .hraw for a .raw file"
+                )
+            return Raw(filepath, fileheader, blockStart, blockEnd)
+    raise ValueError(f"Unsupported file extension for {filepath!r}")
+
+
+def open_path(
+    filepath: str | os.PathLike[str],
+    raw_header_filepath: str | os.PathLike[str] | None = None,
+    blockStart: int = 1,
+    blockEnd: int = 1,
+) -> Scan | Bps | Roi | Raw:
+    """Main IO function.
+    Checks if the file exists, then dispatches the path to the correct function.
+
+    Last three parameters are optional for all files types except '.raw' files which needs to be paired with their corresponding '.hraw' file in the path2 parameter
+
+    Parameters
+    ----------
+
+    **path**: str
+        File path of the wanted PyIconeus object
+    **path2**: str (optional)
+        File path of the header file. (Only used with .raw files)
+    **blockStart**: int = 1 (optional)
+        The starting block number to get from the raw data
+    **blockEnd**: int = 1 (optional)
+        The last block for the raw data
+
+    Returns
+    -------
+
+    PyIconeus object depending on the given file
+    """
+    filepath = os.fspath(filepath)
+    raw_header_filepath = (
+        os.fspath(raw_header_filepath) if raw_header_filepath is not None else None
+    )
+    if not os.path.isfile(filepath):
+        raise FileNotFoundError(2, "The following file does not exist", filepath)
+
+    if (
+        os.path.splitext(filepath)[1].lower() == ".raw"
+        and raw_header_filepath is not None
+        and not os.path.isfile(raw_header_filepath)
+    ):
+        raise FileNotFoundError(
+            2, "The following file does not exist", raw_header_filepath
+        )
+
+    return dispatch_extension(filepath, raw_header_filepath, blockStart, blockEnd)

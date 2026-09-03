@@ -1,2 +1,8 @@
 *__pycache__*
-pyiconeus/tests/data
+tests/data
+.vscode/settings.json
+temp.py
+tests/data.zip
+.vscode
+docs/_autosummary
+docs/_build
