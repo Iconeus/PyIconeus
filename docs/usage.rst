@@ -58,7 +58,11 @@ Errors
 
 ``open_path`` raises ``FileNotFoundError`` when either path does not exist,
 ``ValueError`` for an unsupported extension, a missing/invalid ``.hraw``
-header, or an invalid block range, and ``OSError`` when a file cannot be read.
+header, or an invalid ``blockStart`` range. If ``blockEnd`` is
+greater than ``numberOfBlock``, it is clamped to the available number of
+blocks and a ``RuntimeWarning`` is emitted. ``blockEnd`` smaller than
+``blockStart`` raises ``RuntimeError``. Raises ``OSError`` when a file cannot be read,
+and ``TypeError`` if a non-integer argument is passed.
 
 More complete, runnable walkthroughs are available as notebooks in the
 `examples <https://github.com/Iconeus/PyIconeus/tree/main/examples>`_

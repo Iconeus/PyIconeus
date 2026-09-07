@@ -59,10 +59,10 @@ gender : :class:`~pyiconeus.models.Scan.GenderType`
     Gender of the subject
 
 transferDate : datetime.datetime
-    Date of the transfer
+    Date of the transfer, in seconds, time since 00:00:00 Coordinated Universal Time (UTC), Thursday, 1 January 1970, not counting leap seconds
 
 ageAtTransfer : int
-    Age at the transfer
+    Age at the transfer in days
 
 subjectDescription : str
     Description of the subject
@@ -77,10 +77,10 @@ Acquisition parameters
 ++++++++++++++++++++++++
 
 acquisitionMode : :class:`~pyiconeus.models.Scan.AcquisitionMode`
-    Description of the type of acquisition (ex: 3DScan, 4DScan, ...)
+    Description of the type of acquisition (ex: fUS3D, Angio3D, ...)
 
 acquisitionDate : datetime.datetime
-    Date of the acquisition
+    Date of the transfer, in seconds, time since 00:00:00 Coordinated Universal Time (UTC), Thursday, 1 January 1970, not counting leap seconds
 
 type : :class:`~pyiconeus.models.Scan.ScanType`
     'Source' or 'Proc', if the scan has been modified
@@ -101,19 +101,19 @@ ultrafastSamplingFrequency : float
     Frequency of the ultra fast sampling, in MHz
 
 planeWaveAngles : list[float]
-    List of the plane waves angles
+    List of the plane waves angles, in radians
 
 transmitVoltage : float
-    Voltage of the transmit
+    Voltage of the transmit, in volts
 
 delayAfterTrigger : float
-    Delay after each trigger
+    Delay after each trigger, in seconds
 
 isMultiplane : bool
     True if the acquisition is multiplane
 
 integrationWindowDuration : float
-    Time of the window duration
+    Time of the window duration, in seconds
 
 stimulationToggleTimes : list[float]
     List of the times the stimulation was toggled
@@ -123,8 +123,8 @@ Geometry, timing & data
 
 sizeX, sizeY, sizeZ : int
     Dimension of the acquisition:
-        - sizeX: Width size in number of voxels
-        - sizeY: Height size in number of voxels
+        - sizeX: Lateral size in number of voxels
+        - sizeY: Elevation size in number of voxels
         - sizeZ: Depth in number of voxels
 
 nTime : int
@@ -140,20 +140,20 @@ dim6 : :class:`~pyiconeus.models.Scan.Dim6`
     Description about additional filters, see the :ref:`dim6-section` section below.
 
 measuredTimes : list[float]
-    List containing the times of every acquired block
+    List containing the times of every acquired block, in seconds
 
 theoreticalTimeIndices : list[int]
     Indices of the measuredTimes list
 
 probeToLabsTranslations : numpy.ndarray
-    Array of mean translations, with shape ``(nPose, 3)``.
+    Array of translation in the Lab space, with shape ``(nPose, 3)``.
 
 probeToLabsRotations : numpy.ndarray
-    Array of rotations in radians, with shape ``(nPose, 3)``.
+    Array of euler angles in radians, with shape ``(nPose, 3)``.
 
-The :meth:`~pyiconeus.models.Scan.Scan.get_ProbeToLab` method combines these
+The :meth:`~pyiconeus.models.Scan.Scan.get_probe_to_lab` method combines these
 values into one 4x4 affine matrix per pose. The
-:meth:`~pyiconeus.models.Scan.Scan.get_VoxelToProbe` method returns the 4x4
+:meth:`~pyiconeus.models.Scan.Scan.get_voxel_to_probe` method returns the 4x4
 voxel-to-probe affine matrix.
 
 voxels : numpy.ndarray
@@ -180,7 +180,7 @@ dx, dy, dz : float
     Voxel size along each axis in meters
 
 dt : float
-    Time in seconds at the end of the acquisition of the first block of the first probe position including the pause. This is not necessarily volumetric dt
+    Time in seconds at the end of the first block of the first probe position including the pause. This is not necessarily volumetric dt
 
 dr : float
     Voxel angle in radians
@@ -209,7 +209,7 @@ probeElevationAperture : float or None
     Elevation aperture in millimeters when available.
 
 probeRadiusOfCurvature : float
-    in millimeters
+    Radius of curvature in millimeters.
 
 probeNumberOfElements : int or None
     Number of probe elements when available.
@@ -252,9 +252,15 @@ ClutterFiltering
 clutterFilter : clutterFilterType (``StaticSVD`` | ``DynamicSVD`` | ``Butterworth``)
 
 clutterFilterWindowDuration : float
-    Duration of the filter in seconds
+    Duration of the window in seconds
 
-clutterFilterCutoffLow, clutterFilterCutoffHigh : float
+clutterFilterCutoffLow, clutterFilterCutoffHigh:
+    For 'StaticSVD': int
+        - First and last singular value contribution
+    For 'DynamicSVD': int
+        - Low and high eigen values
+    For 'Butterworth': float
+        - Left edge of the first bin and right edge of the last bin
 
 VelocityBandwidthFiltering
 ++++++++++++++++++++++++++++
@@ -295,7 +301,7 @@ AcquisitionMode
 
 ``fUS2D``, ``Angio3D``, ``fUS3D``, ``fUS3DCustom``
 
-Legacy ``.scan`` files may store the raw acquisition-mode labels ``2DScan``,
-``3DScan``, ``4DScan``, ``4DScanCustom``, ``4DscanRCA`` and ``3DscanRCA``;
+Legacy ``.scan`` files may store the raw acquisition-mode labels ``2Dscan``,
+``3Dscan``, ``4Dscan``, ``4DscanCustom``, ``4DscanRCA`` and ``3DscanRCA``;
 the two RCA variants are remapped to ``fUS3D`` and ``Angio3D`` respectively
 when the file is read.

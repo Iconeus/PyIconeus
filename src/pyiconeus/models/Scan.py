@@ -54,7 +54,9 @@ class Scan:
     voxDim : VoxDim
         Voxel and frame spacing information.
     acquisitionMode : AcquisitionMode
-        Type of the acquired scan.
+        Description of the type of acquisition (ex: fUS3D, Angio3D, ...)
+    acquisitionDate: datetime.datetime
+        Date of the transfer, time in seconds since 00:00:00 Coordinated Universal Time (UTC), Thursday, 1 January 1970, not counting leap seconds
     probe : Probe
         Information about the ultrasound probe used.
     depth : Depth
@@ -66,31 +68,33 @@ class Scan:
     ultrafastSamplingFrequency : float
         Sampling frequency of the raw channel data in MHz.
     planeWaveAngles : list[float]
-        Plane wave angles used in the acquisition (degrees).
+        Plane wave angles used in the acquisition in radians.
     transmitVoltage : float
-        Transmit voltage in volts.
+        Transmit voltage, in volts.
     delayAfterTrigger : float
-        Delay after trigger, seconds.
+        Delay after trigger, in seconds.
     isMultiplane : bool
         Whether multi-plane imaging was used.
     integrationWindowDuration : float
-        Integration window duration, seconds.
+        Integration window duration, in seconds.
     sequenceName : str
         Ultrasound sequence name.
     projectTag, subjectTag, sessionTag, scanTag : str
         Identifying tags for the project and subject.
+    subjectDescription: str
+        Description of the subject
     projectDescription : str
         User comment / description of the acquisition.
     species : str
         Species of the subject (e.g., "Mouse").
     gender : GenderType
         Subject gender enum.
-    transferDate, acquisitionDate : datetime
-        Dates when data was acquired and transferred.
+    transferDate: datetime
+        Date of the transfer, time in seconds since 00:00:00 Coordinated Universal Time (UTC), Thursday, 1 January 1970, not counting leap seconds
     ageAtTransfer : int
         Age at data transfer in days.
     weight : float
-        Subject weight.
+        Subject weight, in **weightUnit**.
     weightUnit : WeightUnitType
         Unit of the subject weight.
     treatment : str
@@ -102,7 +106,7 @@ class Scan:
     type : ScanType
         Whether this is a source or processed scan.
     stimulationToggleTimes : list[float]
-        Times of external stimulation toggles (seconds).
+        Times of external stimulation toggles, in seconds.
     icoScanVersion : IcoScanVersion | None
         Version of the IcoScan software that acquired the data.
     voxels : np.ndarray
@@ -143,15 +147,13 @@ class Scan:
     SCAN_4CC_STR = "scan"
 
     def __init__(self, filepath: str | os.PathLike[str]) -> None:
-        """Scan class constructor. Reads the input file depending on the type set in 'is_binary'.
+        """Scan class constructor. Reads the input file depending on the version of the scan, determined by the `utils.check_fourCC` function.
         For scans v1 (not binary), the scan is filled with a lot of default values, matching the v2 format.
 
         Parameters
         ----------
         **filepath**: str
             The file path for the scan
-        **is_binary**: bool
-            Boolean indicating the version of the scan
 
         Returns
         -------
@@ -748,6 +750,25 @@ class Scan:
 
 
 class VoxDim:
+    """
+    Voxel dimension
+
+    Attributes
+    ----------
+
+    dx, dy, dz : float
+        Voxel size along each axis in meters
+
+    dt : float
+        Time in seconds at the end of the first block of the first probe position including the pause. This is not necessarily volumetric dt
+
+    dr : float
+        Voxel angle in radians
+
+    dtheta : float
+        Voxel angle in radians
+    """
+
     def __init__(self, dx=0, dy=0, dz=0, dt=0, dr=0, dtheta=0) -> None:
         self.dx: float = dx
         self.dy: float = dy
@@ -812,6 +833,17 @@ class VoxDim:
 
 
 class IcoScanVersion:
+    """
+    IcoScan Version information
+
+    Attributes
+    ----------
+
+    major, minor, patch : int
+        Version identification numbers
+
+    """
+
     def __init__(self, major: int, minor: int, patch: int) -> None:
         self.major = major
         self.minor = minor
@@ -824,6 +856,19 @@ class IcoScanVersion:
 
 
 class Dim6:
+    """
+    Dimension in the data containing information about filtering
+
+    Attributes
+    ----------
+
+    count : int
+        Number of dim6 elements.
+
+    dim6element : set[tuple[Dim6Intent, object]]
+        Set of all the Dim6Intents
+    """
+
     class Dim6Intent(IntEnum):
         ClutterFiltering = 0
         EnhancedDoppler = 1
@@ -831,6 +876,26 @@ class Dim6:
         BrainMaskedDoppler = 3
 
     class ClutterFiltering:
+        """
+        Clutter filtering informations
+
+        Attributes
+        ----------
+
+        clutterFilter : clutterFilterType (``StaticSVD`` | ``DynamicSVD`` | ``Butterworth``)
+
+        clutterFilterWindowDuration : float
+            Duration of the window in seconds
+
+        clutterFilterCutoffLow, clutterFilterCutoffHigh:
+            For 'StaticSVD': int
+                - First and last singular value contribution
+            For 'DynamicSVD': int
+                - Low and high eigen values
+            For 'Butterworth': float
+                - Left edge of the first bin and right edge of the last bin
+        """
+
         class clutterFilterType(IntEnum):
             StaticSVD = 0
             DynamicSVD = 1
@@ -879,6 +944,19 @@ class Dim6:
         __repr__ = __str__
 
     class VelocityBandwidthFiltering:
+        """
+        Velocity bandwith filtering informations
+
+        Attributes
+        ----------
+
+        velocityMin, velocityMax : float
+            Minimum and maximum velocity values as stored in the file. The reader does
+            not convert their unit.
+
+
+        """
+
         def __init__(self) -> None:
             self.velocityMin: float
             self.velocityMax: float
@@ -970,6 +1048,37 @@ class AcquisitionMode(IntEnum):
 
 
 class Probe:
+    """
+    Probe class, containing the metadata of the probe used for the acquisition
+
+    Attributes
+    ----------
+
+    name : str
+        Name of the probe
+
+    probeType : Probe.ProbeType
+        One of ``Linear``, ``MultiArray``, ``RCA``, ``Phased``, ``Matrix``.
+
+    probeCentralFrequency : float or None
+        Probe central frequency in MHz when available.
+
+    probePitch : float or None
+        Probe pitch in millimeters when available.
+
+    probeElevationAperture : float or None
+        Elevation aperture in millimeters when available.
+
+    probeRadiusOfCurvature : float
+        Radius of curvature in millimeters.
+
+    probeNumberOfElements : int or None
+        Number of probe elements when available.
+
+    probeModel : str or None
+        Probe model or serial number when available.
+    """
+
     _DZ_ICO_BRIGHT = np.trunc(1e8 * 1540 * 1e-6 / 12.5)
     _DZ_ICO_PRIME = np.trunc(1e8 * 1540 * 1e-6 / 15.625)
     _DZ_ICO_RANGE = np.trunc(1e8 * 1540 * 1e-6 / 8.9290)
@@ -989,7 +1098,7 @@ class Probe:
         self.probeCentralFrequency: float | None
         self.probePitch: float | None
         self.probeElevationAperture: float | None
-        self.probeRadiusOfCurvature: float | None
+        self.probeRadiusOfCurvature: float
         self.probeNumberOfElements: int | None
         self.probeModel: str | None
 
@@ -1101,6 +1210,19 @@ class Probe:
 
 
 class Depth:
+    """
+    Depth informations
+
+    Attributes
+    ----------
+
+    depthNear : float
+        in millimeters
+
+    depthFar : float
+        in millimeters
+    """
+
     def __init__(self) -> None:
         self.depthNear: float
         self.depthFar: float

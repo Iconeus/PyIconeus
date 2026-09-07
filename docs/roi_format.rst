@@ -26,7 +26,7 @@ Attributes
 name : str
     Name of the ROI
 
-color : tuple[float, float, float]
+color : tuple[float, ...]
     Normalized (R, G, B) vector with three components in the range 0..1.
 
 vertices : np.ndarray
