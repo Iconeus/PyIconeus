@@ -23,17 +23,9 @@ class Roi:
     Attributes
     ----------
 
-    color: RoiColor
-        The displayed color of the Roi
+    list: list[RoiElements]
+        List containing the different ROIs of the file
 
-    label: str
-        The name of the Roi
-
-    vertices: np.ndarray (N, 3)
-        The points in Brain space of the volume
-
-    faces: np.ndarray (N, 3)
-        Each row contains the indices of the vertices composing a triangle of the volume
     """
 
     ROI_4CC_STR = "bri_"
@@ -102,6 +94,25 @@ class Roi:
 
 
 class RoiElements:
+    """
+    Region of Interest properties and values.
+
+    Attributes
+    ----------
+
+    color : tuple[float, ...]
+        Normalized (R, G, B) vector with three components in the range 0..1.
+
+    name: str
+        The name of the Roi
+
+    vertices: np.ndarray (N, 3)
+        The points in Brain space of the volume
+
+    faces: np.ndarray (N, 3)
+        Each row contains the indices of the vertices composing a triangle of the volume
+    """
+
     def __init__(
         self,
         color: tuple[float, ...],

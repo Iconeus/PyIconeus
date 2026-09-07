@@ -28,33 +28,36 @@ MetaData
 Attributes
 +++++++++++
 
+acquisitionMode: str
+    Description of the type of acquisition (ex: 2Dscan, 3Dscan, ...)
+
 transmitFrequency : float
-    The transmit frequency of the acquisition
+    The transmit frequency of the acquisition, in MHz
 
 prf : float
-    The pulse repetition frequency
+    The pulse repetition frequency, Hz
 
 speedOfSound : float
-    The speed of sound
+    The speed of sound, in meter per second
 
 frameRate : float
-    Frame rate of the acquisition
+    Frame rate of the acquisition, in Hz
 
 receiveAperture : np.ndarray
-    Receive Aperture
+    Receive aperture, first and last elements of the aperture
 
 depth : Scan.Depth
-    Near and Far depth
+    Near and Far depth, in millimeter
 
 flatAngles : np.ndarray
-    Angles of the probe during the acquisition
+    Angles of the probe during the acquisition, in degrees
 
 voxDim : Scan.VoxDim
-    VoxDim data
+    Voxel dimension x, y and z, in meters
 
 blockDim : np.ndarray
-    BlockDim data
-
+    Block dimension x, y, z, angle, frame 
+    
 compound : bool
     True if the images are compounded, False otherwise
 
@@ -73,6 +76,3 @@ They are one-based and inclusive, and default to block 1. If ``blockEnd`` is
 greater than ``numberOfBlock``, it is clamped to the available number of
 blocks and a ``RuntimeWarning`` is emitted. ``blockEnd`` smaller than
 ``blockStart`` raises ``RuntimeError``.
-
-acquisitionMode : str
-    Type of acquisition

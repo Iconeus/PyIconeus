@@ -27,7 +27,9 @@ class Raw:
     **metadata**: Raw.Metadata
         The metadata of the acquisition
     **data**: np.ndarray
-        The raw data of the acquisition
+        NumPy array containing the complex IQ data after beamforming. The leading
+        dimensions are ordered as ``(sizeZ, sizeY, sizeX, compound, frames, blocks)``
+        before singleton dimensions are removed by ``numpy.squeeze``.
     """
 
     class MetaData:
@@ -37,32 +39,35 @@ class Raw:
         Attributes
         ----------
 
+        **acquisitionMode**: *str*
+            Description of the type of acquisition (ex: 2Dscan, 3Dscan, ...)
+
         **transmitFrequency**: float
-            The transmit frequency of the acquisition
+            The transmit frequency of the acquisition, in MHz
 
         **prf**: float
-            The pulse repetition frequency
+            The pulse repetition frequency, in Hz
 
         **speedOfSound**: float
-            The speed of sound
+            The speed of sound, in meter per second
 
         **frameRate**: float
-            Frame rate of the acquisition
+            Frame rate of the acquisition, in Hz
 
         **receiveAperture**: np.ndarray
-            Receive Aperture
+            Receive aperture, first and last elements of the aperture
 
         **depth**: Scan.Depth
-            Near and Far depth
+            Near and Far depth, in millimeter
 
         **flatAngles**: np.ndarray
-            Angles of the probe during the acquisition
+            Angles of the probe during the acquisition, in degrees
 
         **voxDim**: Scan.VoxDim
-            VoxDim data
+            Voxel dimension x, y, z, in millimeters
 
         **blockDim**: np.ndarray
-            BlockDim data
+            Block dimension x, y, z, angle, frame
 
         **compound**: bool
             True if the images are compounded, False otherwise
@@ -74,8 +79,6 @@ class Raw:
             True if the file uses the legacy raw data block layout from
             early '.raw' acquisitions, False otherwise
 
-        **acquisitionMode**: *str*
-            Type of acquisition
         """
 
         @staticmethod

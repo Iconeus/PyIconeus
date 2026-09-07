@@ -54,9 +54,9 @@ def open_path(
     Parameters
     ----------
 
-    **path**: str
+    **filepath**: str | os.PathLike[str]
         File path of the wanted PyIconeus object
-    **path2**: str (optional)
+    **raw_header_filepath**: str | os.PathLike[str] | None (optional)
         File path of the header file. (Only used with .raw files)
     **blockStart**: int = 1 (optional)
         The starting block number to get from the raw data
