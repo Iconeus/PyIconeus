@@ -15,14 +15,14 @@ from pyiconeus.utils.utils import (
 )
 
 
-def test_check_fourCC():
+def test_check_fourCC(data_path):
     assert check_fourCC(
-        "./tests/data" + "/4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan", "scan"
+        data_path("4Dscan_11_StimVIS16__60_30_60_8_fus3D.source_v2.scan"), "scan"
     )
 
 
-def test_hdf5_printer():
-    with h5py.File("./tests/data/2DScan.source.scan") as f:
+def test_hdf5_printer(data_path):
+    with h5py.File(data_path("2DScan.source.scan")) as f:
         hdf5_printer(f["Data"])
         assert True
 

@@ -8,19 +8,19 @@ import pyiconeus
 from pyiconeus import Roi
 
 
-def test_load_hdf5():
-    roi_test: pyiconeus.Roi = Roi("./tests/data" + "/roi_for_4DStacked.bri")
+def test_load_hdf5(data_path):
+    roi_test: pyiconeus.Roi = Roi(data_path("roi_for_4DStacked.bri"))
     assert isinstance(roi_test, pyiconeus.Roi)
 
 
-def test_load_binary():
-    roi_test: pyiconeus.Roi = Roi("./tests/data" + "/roiread_binary.bri")
+def test_load_binary(data_path):
+    roi_test: pyiconeus.Roi = Roi(data_path("roiread_binary.bri"))
     assert isinstance(roi_test, pyiconeus.Roi)
 
 
-def test_roi_dispatch_version():
-    roi_test_hdf5: pyiconeus.Roi = Roi("./tests/data" + "/roi_for_4DStacked.bri")
-    roi_test_binary: pyiconeus.Roi = Roi("./tests/data" + "/roiread_binary.bri")
+def test_roi_dispatch_version(data_path):
+    roi_test_hdf5: pyiconeus.Roi = Roi(data_path("roi_for_4DStacked.bri"))
+    roi_test_binary: pyiconeus.Roi = Roi(data_path("roiread_binary.bri"))
     print("\nRoi Hdf5")
     print(roi_test_hdf5)
     print("\nRoi binary")
@@ -29,8 +29,8 @@ def test_roi_dispatch_version():
     assert isinstance(roi_test_binary, pyiconeus.Roi)
 
 
-def test_roi_values():
-    roi_test: pyiconeus.Roi = Roi("./tests/data" + "/Cortex.bri")
+def test_roi_values(data_path):
+    roi_test: pyiconeus.Roi = Roi(data_path("Cortex.bri"))
     assert roi_test.list[0].name == "Isocortex (L)"
     color = roi_test.list[0].color
     assert color[0] == float(112 / 255)
