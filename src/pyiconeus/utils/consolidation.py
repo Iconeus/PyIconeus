@@ -352,7 +352,7 @@ def consolidate_scan(
             time,
             timeOriginal,
             np.array([probe2lab.T[3][:3]]),
-            np.array([mat2euler(probe2lab)]),
+            -np.array([mat2euler(probe2lab)]),
             None,
         )
 
