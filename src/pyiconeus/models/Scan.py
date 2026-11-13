@@ -266,7 +266,7 @@ class Scan:
                 tform = probeToLabs[i]
                 tr = np.copy(tform.T[3][0:3])
                 tform.T[3][0:3] = 0
-                eul = -inverse_rotation_xyz(tform)
+                eul = inverse_rotation_xyz(tform)
                 rotations[i] = eul
                 translations[i] = tr
             self.probeToLabsTranslations = translations
@@ -664,7 +664,7 @@ class Scan:
         for i in range(self.nPose):
             self.probeToLabsTranslations[i] = [_read_struct(f, "<d") for _ in range(3)]
         for i in range(self.nPose):
-            self.probeToLabsRotations[i] = [_read_struct(f, "<d") for _ in range(3)]
+            self.probeToLabsRotations[i] = [-_read_struct(f, "<d") for _ in range(3)]
 
     def get_voxel_to_probe(self) -> np.ndarray:
         """
@@ -712,9 +712,9 @@ class Scan:
         rep = []
         for i in range(len(self.probeToLabsRotations)):
             rot = (
-                -self.probeToLabsRotations[i][0],
-                -self.probeToLabsRotations[i][1],
-                -self.probeToLabsRotations[i][2],
+                self.probeToLabsRotations[i][0],
+                self.probeToLabsRotations[i][1],
+                self.probeToLabsRotations[i][2],
             )
             Rm = rotation_xyz(rot)
             Rm.T[3][0] = self.probeToLabsTranslations[i][0]
