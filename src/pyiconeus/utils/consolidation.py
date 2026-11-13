@@ -421,6 +421,6 @@ def consolidate_scan(
         time,
         theoretical_indices,
         probe2labTranslation,
-        -probe2labRotation,
+        probe2labRotation,
         voxDimDy,
     )

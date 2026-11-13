@@ -664,7 +664,7 @@ class Scan:
         for i in range(self.nPose):
             self.probeToLabsTranslations[i] = [_read_struct(f, "<d") for _ in range(3)]
         for i in range(self.nPose):
-            self.probeToLabsRotations[i] = [_read_struct(f, "<d") for _ in range(3)]
+            self.probeToLabsRotations[i] = [-_read_struct(f, "<d") for _ in range(3)]
 
     def get_voxel_to_probe(self) -> np.ndarray:
         """

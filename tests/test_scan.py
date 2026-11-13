@@ -139,7 +139,7 @@ def test_compare_v1_v2_scanmetaData():
     assert scanv1.icoScanVersion.patch == scanv2.icoScanVersion.patch
 
 
-def test_compare_matrices():
+def test_compare_probeToLab():
     scanv1: Scan = Scan("./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3D.source.scan")
     scanv2: Scan = Scan(
         "./tests/data/4Dscan_1_StimVIS16__60_30_60_8_fus3Dv2.source.scan"
@@ -149,6 +149,18 @@ def test_compare_matrices():
     assert isinstance(scanv2, Scan)
     ptl1 = scanv1.get_probe_to_lab()[0]
     ptl2 = scanv2.get_probe_to_lab()[0]
+    print(scanv1.get_probe_to_lab())
+    print(scanv2.get_probe_to_lab())
+    assert np.allclose(ptl1, ptl2)
+    scanv1: Scan = Scan("./tests/data/2DScan_v2.source.scan")
+    scanv2: Scan = Scan("./tests/data/2DScan_v2.source.scan")
+
+    assert isinstance(scanv1, Scan)
+    assert isinstance(scanv2, Scan)
+    ptl1 = scanv1.get_probe_to_lab()[0]
+    ptl2 = scanv2.get_probe_to_lab()[0]
+    print(scanv1.get_probe_to_lab())
+    print(scanv2.get_probe_to_lab())
     assert np.allclose(ptl1, ptl2)
 
 
@@ -220,7 +232,3 @@ def test_RCA_loading():
     assert isinstance(scan, Scan)
     assert scan.probe.probeType == Probe.ProbeType.RCA
     assert scan.acquisitionMode == AcquisitionMode.fUS3D
-
-
-if __name__ == "__main__":
-    test_compare_matrices()
