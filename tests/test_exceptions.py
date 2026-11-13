@@ -19,18 +19,18 @@ def test_invalid_file_open_path():
     )
 
 
-def test_invalid_file_open_path2():
+def test_invalid_file_open_path2(data_path):
     with pytest.raises(FileNotFoundError) as exception:
-        open_path("./tests/data/2DScan_v2.raw", "invalidfileordirectory")
+        open_path(data_path("2DScan_v2.raw"), "invalidfileordirectory")
     assert (
         str(exception.value)
         == "[Errno 2] The following file does not exist: 'invalidfileordirectory'"
     )
 
 
-def test_valid_format_invalid_content():
+def test_valid_format_invalid_content(data_path):
     with pytest.raises(OSError) as exception:
-        open_path("./tests/data/empty.scan")
+        open_path(data_path("empty.scan"))
     assert (
         str(exception.value)
         == "Unable to synchronously open file (file signature not found)"
@@ -53,43 +53,47 @@ def test_fourCC_Non_Unicode():
     os.remove("tmp.scan")
 
 
-def test_fourCC_unreadable_file():
+def test_fourCC_unreadable_file(data_path):
+    directory = os.path.dirname(data_path("Mouse.bps"))
     with pytest.raises(OSError) as exception:
-        check_fourCC("./tests/data", "scan")
+        check_fourCC(directory, "scan")
     assert exception is not None
 
 
-def test_open_raw_missing_header():
+def test_open_raw_missing_header(data_path):
+    raw = data_path("2DScan_v2.raw")
     with pytest.raises(ValueError) as exception:
-        open_path("./tests/data/2DScan_v2.raw")
+        open_path(raw)
     assert exception is not None
     assert (
         str(exception.value)
-        == "'./tests/data/2DScan_v2.raw' is a .raw file but no fileheader was provided"
+        == f"'{raw}' is a .raw file but no fileheader was provided"
     )
 
 
-def test_open_raw_invalid_header_extention():
+def test_open_raw_invalid_header_extention(data_path):
+    header = data_path("Mouse.bps")
     with pytest.raises(ValueError) as exception:
-        open_path("./tests/data/2DScan_v2.raw", "./tests/data/Mouse.bps")
+        open_path(data_path("2DScan_v2.raw"), header)
     assert exception is not None
     assert (
         str(exception.value)
-        == "fileheader './tests/data/Mouse.bps' must end with .hraw for a .raw file"
+        == f"fileheader '{header}' must end with .hraw for a .raw file"
     )
 
 
-def test_raw_wrong_block_number():
+def test_raw_wrong_block_number(data_path):
     with pytest.raises(RuntimeError) as exception:
-        open_path("./tests/data/2DScan_v2.raw", "./tests/data/2DScan_v2.hraw", 5, 3)
+        open_path(data_path("2DScan_v2.raw"), data_path("2DScan_v2.hraw"), 5, 3)
     assert str(exception.value) == "blockEnd must be greater or equal to blockStart"
 
 
-def test_3D_Scan():
+def test_3D_Scan(data_path):
     with pytest.raises(RuntimeError) as exception:
         open_path(
-            "./tests/data"
-            + "/sub-Mouse001_ses-Session_2021-6-24_3Dscan_2_tomo_angio3D.source.scan"
+            data_path(
+                "sub-Mouse001_ses-Session_2021-6-24_3Dscan_2_tomo_angio3D.source.scan"
+            )
         )
     assert (
         str(exception.value)
@@ -97,15 +101,13 @@ def test_3D_Scan():
     )
 
 
-def test_invalid_file_format():
+def test_invalid_file_format(data_path):
+    txt = data_path("notAScan.txt")
     with pytest.raises(ValueError) as exception:
-        open_path("./tests/data/" + "notAScan.txt")
-    assert (
-        str(exception.value)
-        == "Unsupported file extension for './tests/data/notAScan.txt'"
-    )
+        open_path(txt)
+    assert str(exception.value) == f"Unsupported file extension for '{txt}'"
 
 
-def test_irrelevant_header_is_not_validated():
-    scan = open_path("./tests/data/2DScan_v2.source.scan", "missing.hraw")
+def test_irrelevant_header_is_not_validated(data_path):
+    scan = open_path(data_path("2DScan_v2.source.scan"), "missing.hraw")
     assert scan is not None

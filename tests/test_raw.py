@@ -11,15 +11,15 @@ from pyiconeus import Raw
 from pyiconeus.models.Scan import Depth, VoxDim
 
 
-def test_read_raw():
-    raw = Raw("./tests/data" + "/2DScan_v2.raw", "./tests/data" + "/2DScan_v2.hraw")
+def test_read_raw(data_path):
+    raw = Raw(data_path("2DScan_v2.raw"), data_path("2DScan_v2.hraw"))
     assert isinstance(raw, pyiconeus.Raw)
 
 
-def test_raw_val():
-    raw = Raw("./tests/data" + "/2DScan_v2.raw", "./tests/data" + "/2DScan_v2.hraw")
+def test_raw_val(data_path):
+    raw = Raw(data_path("2DScan_v2.raw"), data_path("2DScan_v2.hraw"))
     metadata: pyiconeus.Raw.MetaData = pyiconeus.Raw.MetaData(
-        "./tests/data" + "/2DScan_v2.hraw"
+        data_path("2DScan_v2.hraw")
     )
     metadata.transmitFrequency = float(
         Raw.MetaData.decrypt_data(np.array([15775.125]), 1)
@@ -79,10 +79,8 @@ def test_raw_val():
 
 
 @mark.filterwarnings("ignore::RuntimeWarning")
-def test_invalid_blockEnd():
-    raw = Raw(
-        "./tests/data/" + "2DScan_v2.raw", "./tests/data/" + "2DScan_v2.hraw", 1, 100
-    )
+def test_invalid_blockEnd(data_path):
+    raw = Raw(data_path("2DScan_v2.raw"), data_path("2DScan_v2.hraw"), 1, 100)
     assert raw.metadata.numberOfBlock == 9
     assert raw.data.shape[3] == 9
 

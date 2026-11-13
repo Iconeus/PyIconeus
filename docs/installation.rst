@@ -46,13 +46,14 @@ transforms3d. To install the test dependency as well from a source checkout:
 Check the installation
 ------------------------
 
-The repository tests use sample files stored in ``tests/data``. The complete
-test data set can be downloaded by running the following script (approximately
-3 GB):
+The repository tests use sample files hosted in a Hugging Face dataset. Each
+test downloads only the files it needs, on first use, into the Hugging Face
+cache — there is no separate download step, and the full 3 GB data set is never
+required.
 
-.. code-block:: console
-
-   python download_script.py
+Set ``PYICONEUS_TEST_REPO`` to change the source, or ``HF_HUB_CACHE`` to change
+the cache location. The same fixtures are archived on Zenodo at
+`10.5281/zenodo.22249523 <https://doi.org/10.5281/zenodo.22249523>`_.
 
 Run the tests:
 

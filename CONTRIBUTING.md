@@ -29,9 +29,12 @@ ruff format --check .
 mypy --install-types --non-interactive src/pyiconeus tests
 ```
 
-The test suite must maintain at least 90% total coverage. Test data is expected
-to be available under `tests/data/`. It is hosted on Zenodo and can be fetched
-with `python download_script.py`.
+The test suite must maintain at least 90% total coverage. Test data is fetched
+per file, on demand, from a Hugging Face dataset and cached in the Hugging Face
+cache — no manual download step is needed. Set `PYICONEUS_TEST_REPO` or
+`HF_HUB_CACHE` to override the source or cache.
+
+The same fixtures are archived on Zenodo:
 
 [![Test data DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22249523.svg)](https://doi.org/10.5281/zenodo.22249523)
 
